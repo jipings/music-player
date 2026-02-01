@@ -1,112 +1,143 @@
-use rodio::{Decoder, OutputStreamBuilder, Sink};
+use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::fs::File;
 use std::io::BufReader;
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Mutex};
+use std::thread;
+use std::time::Duration;
+use tauri::{AppHandle, Emitter};
 
-pub struct AudioPlayer {
-    sink: Arc<Mutex<Sink>>,
+#[derive(Debug)]
+pub enum AudioCommand {
+    Play(String),   // Play new file
+    Pause,          // Pause
+    Resume,         // Resume
+    Stop,           // Stop and clear
+    Seek(f32),      // Seek to seconds
+    SetVolume(f32), // 0.0 - 1.0
 }
 
-impl AudioPlayer {
-    /// # Errors
-    ///
-    /// Returns an error if the default audio output stream cannot be opened.
-    pub fn new() -> Result<Self, String> {
-        // In rodio 0.21, we use OutputStreamBuilder to open the default stream.
-        let stream = OutputStreamBuilder::open_default_stream()
-            .map_err(|e| format!("Failed to open audio output stream: {e}"))?;
-
-        // Leak the stream to keep it alive globally.
-        let stream_ref = Box::leak(Box::new(stream));
-
-        // Create the sink using the mixer from the stream reference.
-        let sink = Sink::connect_new(stream_ref.mixer());
-
-        Ok(Self {
-            sink: Arc::new(Mutex::new(sink)),
-        })
-    }
-
-    /// # Errors
-    ///
-    /// Returns an error if the file cannot be opened, decoded, or if the sink mutex is poisoned.
-    pub fn load_track(&self, path: &str) -> Result<(), String> {
-        let file = File::open(path).map_err(|e| format!("Failed to open file '{path}': {e}"))?;
-        let reader = BufReader::new(file);
-
-        let source =
-            Decoder::new(reader).map_err(|e| format!("Failed to decode audio file: {e}"))?;
-
-        let sink = self.sink.lock().map_err(|_| "Failed to lock sink mutex")?;
-
-        // Clear existing queue before playing new track
-        sink.clear();
-        sink.append(source);
-        sink.play();
-        drop(sink);
-
-        Ok(())
-    }
-
-    pub fn play(&self) {
-        if let Ok(sink) = self.sink.lock() {
-            sink.play();
-        }
-    }
-
-    pub fn pause(&self) {
-        if let Ok(sink) = self.sink.lock() {
-            sink.pause();
-        }
-    }
-
-    pub fn stop(&self) {
-        if let Ok(sink) = self.sink.lock() {
-            // Stop playback and clear the queue
-            sink.pause(); // Pause first to stop immediate playback
-            sink.clear();
-        }
-    }
-
-    pub fn set_volume(&self, volume: f32) {
-        if let Ok(sink) = self.sink.lock() {
-            sink.set_volume(volume);
-        }
-    }
-
-    #[must_use]
-    pub fn is_paused(&self) -> bool {
-        self.sink.lock().is_ok_and(|sink| sink.is_paused())
-    }
+pub struct AudioPlayerState {
+    pub tx: Mutex<mpsc::Sender<AudioCommand>>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Initializes the audio thread and returns the state to be managed by Tauri.
+///
+/// # Panics
+///
+/// Panics if the default audio stream cannot be opened.
+#[must_use]
+pub fn init_audio_thread(app_handle: AppHandle) -> AudioPlayerState {
+    let (tx, rx) = mpsc::channel();
 
-    // Note: These tests require an audio device. In CI environments without audio,
-    // they might fail or need to be skipped.
+    thread::spawn(move || {
+        // Initialize Rodio
+        // In a real app, you might want to handle error more gracefully or retry,
+        // but for now we panic inside the thread if audio init fails (log it).
+        let stream_result = OutputStreamBuilder::open_default_stream();
+        if let Err(e) = stream_result {
+            eprintln!("Audio thread failed to open output stream: {e}");
+            return;
+        }
+        let stream = stream_result.unwrap();
+        let sink = Sink::connect_new(stream.mixer());
 
-    #[test]
-    fn test_player_creation() {
-        match AudioPlayer::new() {
-            Ok(player) => {
-                // If device exists, player should be created
-                assert!(player.sink.lock().is_ok());
-            }
-            Err(_) => {
-                // If no device, it returns error, which is acceptable in some envs
-                println!("Skipping test: No audio device found");
+        let mut current_duration = Duration::from_secs(0);
+
+        loop {
+            // Wait for commands with a timeout to allow for periodic status updates
+            match rx.recv_timeout(Duration::from_millis(200)) {
+                Ok(cmd) => match cmd {
+                    AudioCommand::Play(path) => {
+                        match File::open(&path) {
+                            Ok(file) => {
+                                let reader = BufReader::new(file);
+                                match Decoder::new(reader) {
+                                    Ok(source) => {
+                                        // Store total duration if available
+                                        if let Some(d) = source.total_duration() {
+                                            current_duration = d;
+                                        } else {
+                                            current_duration = Duration::from_secs(0);
+                                        }
+
+                                        sink.clear();
+                                        sink.append(source);
+                                        sink.play();
+
+                                        // Notify frontend
+                                        app_handle
+                                            .emit(
+                                                "player-status",
+                                                serde_json::json!({ "status": "playing", "path": path, "duration": current_duration.as_secs_f64() }),
+                                            )
+                                            .ok();
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Failed to decode audio: {e}");
+                                        app_handle
+                                            .emit("player-error", format!("Failed to decode: {e}"))
+                                            .ok();
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to open file: {e}");
+                                app_handle
+                                    .emit("player-error", format!("Failed to open file: {e}"))
+                                    .ok();
+                            }
+                        }
+                    }
+                    AudioCommand::Pause => {
+                        sink.pause();
+                        app_handle
+                            .emit("player-status", serde_json::json!({ "status": "paused" }))
+                            .ok();
+                    }
+                    AudioCommand::Resume => {
+                        sink.play();
+                        app_handle
+                            .emit("player-status", serde_json::json!({ "status": "playing" }))
+                            .ok();
+                    }
+                    AudioCommand::Stop => {
+                        sink.stop();
+                        sink.clear();
+                        app_handle
+                            .emit("player-status", serde_json::json!({ "status": "stopped" }))
+                            .ok();
+                    }
+                    AudioCommand::Seek(secs) => {
+                        if let Err(e) = sink.try_seek(Duration::from_secs_f32(secs)) {
+                            eprintln!("Seek failed: {e}");
+                        }
+                    }
+                    AudioCommand::SetVolume(vol) => {
+                        sink.set_volume(vol);
+                    }
+                },
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    // Periodic update: send current position
+                    if !sink.empty() && !sink.is_paused() {
+                        let pos = sink.get_pos().as_secs_f64();
+                        app_handle
+                            .emit(
+                                "player-progress",
+                                serde_json::json!({
+                                    "position": pos,
+                                    "duration": current_duration.as_secs_f64()
+                                }),
+                            )
+                            .ok();
+                    }
+                }
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    // Channel closed, exit thread
+                    break;
+                }
             }
         }
-    }
+    });
 
-    #[test]
-    fn test_volume_control() {
-        if let Ok(player) = AudioPlayer::new() {
-            player.set_volume(0.5);
-            // We can't easily verify internal state of Sink without a getter,
-            // but we ensure it doesn't panic.
-        }
-    }
+    AudioPlayerState { tx: Mutex::new(tx) }
 }

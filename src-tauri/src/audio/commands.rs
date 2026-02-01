@@ -1,25 +1,64 @@
-use crate::audio::player::AudioPlayer;
-use std::sync::Mutex;
+use crate::audio::player::{AudioCommand, AudioPlayerState};
 use tauri::{command, State};
 
-/// # Panics
+/// # Errors
 ///
-/// Panics if the audio player state mutex is poisoned.
+/// Returns an error if the audio command channel is disconnected or the mutex is poisoned.
 #[command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn play(state: State<'_, Mutex<AudioPlayer>>) {
-    println!("Play command received");
-    let player = state.lock().unwrap();
-    player.play();
+pub fn play(path: String, state: State<'_, AudioPlayerState>) -> Result<(), String> {
+    let tx = state.tx.lock().map_err(|e| e.to_string())?;
+    tx.send(AudioCommand::Play(path)).map_err(|e| e.to_string())
 }
 
-/// # Panics
+/// # Errors
 ///
-/// Panics if the audio player state mutex is poisoned.
+/// Returns an error if the audio command channel is disconnected or the mutex is poisoned.
 #[command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn pause(state: State<'_, Mutex<AudioPlayer>>) {
-    println!("Pause command received");
-    let player = state.lock().unwrap();
-    player.pause();
+pub fn pause(state: State<'_, AudioPlayerState>) -> Result<(), String> {
+    let tx = state.tx.lock().map_err(|e| e.to_string())?;
+    tx.send(AudioCommand::Pause).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the audio command channel is disconnected or the mutex is poisoned.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn resume(state: State<'_, AudioPlayerState>) -> Result<(), String> {
+    let tx = state.tx.lock().map_err(|e| e.to_string())?;
+    tx.send(AudioCommand::Resume).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the audio command channel is disconnected or the mutex is poisoned.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn stop(state: State<'_, AudioPlayerState>) -> Result<(), String> {
+    let tx = state.tx.lock().map_err(|e| e.to_string())?;
+    tx.send(AudioCommand::Stop).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the audio command channel is disconnected or the mutex is poisoned.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn seek(seconds: f32, state: State<'_, AudioPlayerState>) -> Result<(), String> {
+    let tx = state.tx.lock().map_err(|e| e.to_string())?;
+    tx.send(AudioCommand::Seek(seconds))
+        .map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the audio command channel is disconnected or the mutex is poisoned.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn set_volume(volume: f32, state: State<'_, AudioPlayerState>) -> Result<(), String> {
+    let tx = state.tx.lock().map_err(|e| e.to_string())?;
+    tx.send(AudioCommand::SetVolume(volume))
+        .map_err(|e| e.to_string())
 }
