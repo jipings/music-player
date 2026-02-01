@@ -10,7 +10,10 @@ const Library: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {/* Placeholder for song list / album grid */}
         {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-          <div key={item} className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer">
+          <div
+            key={item}
+            className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer"
+          >
             <div className="w-full h-40 bg-gray-300 rounded-md mb-4 flex items-center justify-center text-gray-500">
               Cover Art
             </div>
@@ -20,9 +23,7 @@ const Library: React.FC = () => {
         ))}
       </div>
       {currentTrack && (
-        <div className="mt-8 p-4 bg-blue-100 rounded">
-          Currently Selected: {currentTrack}
-        </div>
+        <div className="mt-8 p-4 bg-blue-100 rounded">Currently Selected: {currentTrack}</div>
       )}
     </div>
   );

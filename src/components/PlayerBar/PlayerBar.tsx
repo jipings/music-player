@@ -19,7 +19,7 @@ const PlayerBar: React.FC = () => {
       <div className="w-1/3 flex flex-col items-center">
         <div className="flex items-center space-x-6 mb-2">
           <button className="text-gray-400 hover:text-white">Previous</button>
-          <button 
+          <button
             className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-transform"
             onClick={togglePlay}
           >
@@ -38,12 +38,12 @@ const PlayerBar: React.FC = () => {
 
       <div className="w-1/3 flex justify-end items-center space-x-4">
         <span className="text-xs">Vol</span>
-        <input 
-          type="range" 
-          min="0" 
-          max="1" 
-          step="0.01" 
-          value={volume} 
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
           onChange={(e) => setVolume(parseFloat(e.target.value))}
           className="w-24 accent-blue-500"
         />
