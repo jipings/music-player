@@ -47,7 +47,7 @@ const Library: React.FC = () => {
           <section className="bg-white/10 backdrop-blur-xl rounded-[3rem] border border-white/20 p-8 shadow-2xl overflow-hidden relative">
             {/* Decorative background light for the section */}
             <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none"></div>
-            
+
             <div className="sticky top-0 z-20 flex items-center justify-between mb-8 py-2 px-2 bg-transparent -mx-2">
               <h2 className="text-3xl font-black text-gray-800 tracking-tight flex items-center gap-3">
                 Recently Played
@@ -79,8 +79,12 @@ const Library: React.FC = () => {
                     </div>
                   </div>
                   <div className="px-2">
-                    <h3 className="font-black text-gray-900 truncate text-lg tracking-tight mb-0.5">{album.title}</h3>
-                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.15em] opacity-50 group-hover:opacity-100 transition-opacity">{album.artist}</p>
+                    <h3 className="font-black text-gray-900 truncate text-lg tracking-tight mb-0.5">
+                      {album.title}
+                    </h3>
+                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.15em] opacity-50 group-hover:opacity-100 transition-opacity">
+                      {album.artist}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -119,8 +123,12 @@ const Library: React.FC = () => {
                     </div>
                   </div>
                   <div className="px-2">
-                    <h3 className="font-black text-gray-900 truncate text-lg tracking-tight mb-0.5">{album.title}</h3>
-                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.15em] opacity-50 group-hover:opacity-100 transition-opacity">{album.artist}</p>
+                    <h3 className="font-black text-gray-900 truncate text-lg tracking-tight mb-0.5">
+                      {album.title}
+                    </h3>
+                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.15em] opacity-50 group-hover:opacity-100 transition-opacity">
+                      {album.artist}
+                    </p>
                   </div>
                 </div>
               ))}

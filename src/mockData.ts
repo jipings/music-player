@@ -11,6 +11,13 @@ export interface Playlist {
   creator: string;
 }
 
+export interface LocalFolder {
+  id: string;
+  name: string;
+  path: string;
+  songCount: number;
+}
+
 export const mockAlbums: Album[] = [
   {
     id: '1',
@@ -54,4 +61,11 @@ export const mockPlaylists: Playlist[] = [
   { id: '1', name: 'Chill Vibes', creator: 'User' },
   { id: '2', name: 'Workout Pump', creator: 'User' },
   { id: '3', name: 'Focus Flow', creator: 'User' },
+];
+
+export const mockFolders: LocalFolder[] = [
+  { id: '1', name: 'Downloads', path: 'C:/Users/Music/Downloads', songCount: 42 },
+  { id: '2', name: 'High-Res FLAC', path: 'D:/Music/HighRes', songCount: 156 },
+  { id: '3', name: 'Soundtracks', path: 'D:/Music/OST', songCount: 89 },
+  { id: '4', name: 'Voice Memos', path: 'C:/Users/Voice', songCount: 12 },
 ];

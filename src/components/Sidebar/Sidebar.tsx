@@ -1,7 +1,19 @@
 import React from 'react';
 import { Home, Compass, Disc3, Mic2, Clock, Heart, Folder, ListMusic, Music } from 'lucide-react';
+import { useUiStore } from '../../store/uiStore';
 
 const Sidebar: React.FC = () => {
+  const { currentView, setView } = useUiStore();
+
+  const getLinkClass = (viewName: string) => {
+    const isActive = currentView === viewName;
+    return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+      isActive
+        ? 'text-gray-900 bg-white/60 font-medium shadow-sm'
+        : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'
+    }`;
+  };
+
   return (
     <div className="w-64 h-full bg-white/50 backdrop-blur-xl text-gray-800 flex flex-col p-6 border-r border-white/30 shadow-lg">
       <div className="flex items-center gap-2 mb-10 px-2 text-gray-900">
@@ -17,34 +29,31 @@ const Sidebar: React.FC = () => {
             Menu
           </h3>
           <nav className="space-y-1">
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-900 bg-white/60 hover:bg-white/80 transition-all font-medium shadow-sm"
-            >
+            <button onClick={() => setView('library')} className={getLinkClass('library')}>
               <Home className="w-5 h-5" />
               Home
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
+            </button>
+            <button
+              onClick={() => setView('library')}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600"
             >
               <Compass className="w-5 h-5" />
               Discover
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
+            </button>
+            <button
+              onClick={() => setView('library')}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600"
             >
               <Disc3 className="w-5 h-5" />
               Albums
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
+            </button>
+            <button
+              onClick={() => setView('library')}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600"
             >
               <Mic2 className="w-5 h-5" />
               Artists
-            </a>
+            </button>
           </nav>
         </div>
 
@@ -53,27 +62,18 @@ const Sidebar: React.FC = () => {
             Library
           </h3>
           <nav className="space-y-1">
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
-            >
+            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600">
               <Clock className="w-5 h-5" />
               Recent
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
-            >
+            </button>
+            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600">
               <Heart className="w-5 h-5" />
               Favorites
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
-            >
+            </button>
+            <button onClick={() => setView('local')} className={getLinkClass('local')}>
               <Folder className="w-5 h-5" />
               Local
-            </a>
+            </button>
           </nav>
         </div>
 
@@ -86,7 +86,7 @@ const Sidebar: React.FC = () => {
               <a
                 key={item}
                 href="#"
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all text-gray-600"
               >
                 <ListMusic className="w-5 h-5 opacity-50" />
                 {item}

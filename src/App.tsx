@@ -1,10 +1,14 @@
 import Sidebar from './components/Sidebar/Sidebar';
 import Library from './components/Library/Library';
+import Local from './components/Local/Local';
 import PlayerBar from './components/PlayerBar/PlayerBar';
 import bgImage from './assets/default.jpeg';
+import { useUiStore } from './store/uiStore';
 import './App.css';
 
 function App() {
+  const { currentView } = useUiStore();
+
   return (
     <div
       className="flex flex-col h-screen w-screen overflow-hidden bg-cover bg-center text-gray-900"
@@ -15,7 +19,7 @@ function App() {
 
       <div className="flex flex-1 overflow-hidden z-0">
         <Sidebar />
-        <Library />
+        {currentView === 'local' ? <Local /> : <Library />}
       </div>
       <PlayerBar />
     </div>
