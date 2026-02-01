@@ -2,17 +2,20 @@ pub mod audio;
 pub mod database;
 pub mod scanner;
 
+use audio::commands::{pause, play};
 use audio::player::AudioPlayer;
-use audio::commands::{play, pause};
 use std::sync::Mutex;
 use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+    format!("Hello, {name}! You've been greeted from Rust!")
 }
 
+/// # Panics
+///
+/// Panics if the Tauri application fails to run.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -23,7 +26,7 @@ pub fn run() {
                     app.manage(Mutex::new(player));
                 }
                 Err(e) => {
-                    eprintln!("Error initializing AudioPlayer: {}", e);
+                    eprintln!("Error initializing AudioPlayer: {e}");
                     // We might want to exit or continue with limited functionality
                     // For now, we continue, but commands needing player might fail (or we need to check existence)
                     // Better approach: Manage an Option<AudioPlayer> or a dummy
@@ -32,7 +35,7 @@ pub fn run() {
                     // Or actually, don't panic, just don't manage state?
                     // Commands will fail if state is missing.
                     // Let's manage a dummy or just return error setup?
-                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)));
+                    return Err(Box::new(std::io::Error::other(e)));
                 }
             }
             Ok(())

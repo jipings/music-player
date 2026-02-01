@@ -1,9 +1,9 @@
 use rusqlite::Connection;
 
-pub fn add_track(conn: &Connection, path: &str) {
+pub const fn add_track(_conn: &Connection, _path: &str) {
     // Implement insert logic
 }
 
-pub fn get_all_tracks(conn: &Connection) {
+pub const fn get_all_tracks(_conn: &Connection) {
     // Implement select logic
 }
