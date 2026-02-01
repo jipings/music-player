@@ -5,7 +5,7 @@ use rusqlite::Connection;
 /// Returns an error if the database connection cannot be opened or if table creation fails.
 pub fn init_db() -> Result<Connection, rusqlite::Error> {
     let conn = Connection::open("music_player.db")?;
-    
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS tracks (
             id INTEGER PRIMARY KEY,
@@ -17,6 +17,6 @@ pub fn init_db() -> Result<Connection, rusqlite::Error> {
         )",
         [],
     )?;
-    
+
     Ok(conn)
 }

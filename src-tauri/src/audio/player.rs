@@ -31,8 +31,7 @@ impl AudioPlayer {
     ///
     /// Returns an error if the file cannot be opened, decoded, or if the sink mutex is poisoned.
     pub fn load_track(&self, path: &str) -> Result<(), String> {
-        let file =
-            File::open(path).map_err(|e| format!("Failed to open file '{path}': {e}"))?;
+        let file = File::open(path).map_err(|e| format!("Failed to open file '{path}': {e}"))?;
         let reader = BufReader::new(file);
 
         let source =
