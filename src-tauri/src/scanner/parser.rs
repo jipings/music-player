@@ -4,8 +4,10 @@ use lofty::tag::Accessor;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackMetadata {
+    #[serde(default)]
+    pub id: i64,
     pub path: String,
     pub title: Option<String>,
     pub artist: Option<String>,
@@ -56,6 +58,7 @@ pub fn parse_file(path: &str) -> Result<TrackMetadata, String> {
     });
 
     Ok(TrackMetadata {
+        id: 0,
         path: path.to_string(),
         title,
         artist,
