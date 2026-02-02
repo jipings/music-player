@@ -2148,11 +2148,13 @@ dependencies = [
 name = "music-player"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "lofty",
  "rodio",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",

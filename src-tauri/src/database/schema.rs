@@ -24,7 +24,8 @@ pub fn create_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
             album TEXT,
             duration INTEGER,
             cover_mime TEXT,
-            has_cover INTEGER
+            has_cover INTEGER,
+            cover_img_path TEXT
         )",
         [],
     )?;

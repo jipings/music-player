@@ -40,6 +40,7 @@ export interface Track {
   duration_secs: number;
   cover_mime?: string;
   has_cover: boolean;
+  cover_img_path?: string;
 }
 
 export interface Playlist {

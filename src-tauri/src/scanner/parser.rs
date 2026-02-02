@@ -1,7 +1,10 @@
+use hex;
 use lofty::file::{AudioFile, TaggedFileExt};
 use lofty::probe::Probe;
 use lofty::tag::Accessor;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -15,6 +18,7 @@ pub struct TrackMetadata {
     pub duration_secs: u64,
     pub cover_mime: Option<String>,
     pub has_cover: bool,
+    pub cover_img_path: Option<String>,
 }
 
 /// Parses a media file and extracts metadata.
@@ -25,7 +29,8 @@ pub struct TrackMetadata {
 /// - The file does not exist.
 /// - The file cannot be probed or read by `lofty`.
 /// - There are issues extracting the tags.
-pub fn parse_file(path: &str) -> Result<TrackMetadata, String> {
+/// - There are issues saving the cover art (if `images_dir` is provided).
+pub fn parse_file(path: &str, images_dir: Option<&Path>) -> Result<TrackMetadata, String> {
     let path_obj = Path::new(path);
     if !path_obj.exists() {
         return Err(format!("File not found: {path}"));
@@ -45,17 +50,52 @@ pub fn parse_file(path: &str) -> Result<TrackMetadata, String> {
 
     let duration_secs = properties.duration().as_secs();
 
-    let (has_cover, cover_mime) = tag.map_or((false, None), |t| {
-        t.pictures().first().map_or((false, None), |pic| {
-            (
-                true,
-                Some(pic.mime_type().map_or_else(
-                    || "application/octet-stream".to_string(),
-                    std::string::ToString::to_string,
-                )),
-            )
-        })
-    });
+    let mut cover_mime = None;
+    let mut has_cover = false;
+    let mut cover_img_path = None;
+
+    if let Some(t) = tag {
+        if let Some(pic) = t.pictures().first() {
+            has_cover = true;
+            let mime = pic.mime_type().map_or_else(
+                || "application/octet-stream".to_string(),
+                std::string::ToString::to_string,
+            );
+            cover_mime = Some(mime.clone());
+
+            if let Some(dir) = images_dir {
+                if !dir.exists() {
+                    fs::create_dir_all(dir)
+                        .map_err(|e| format!("Failed to create images directory: {e}"))?;
+                }
+
+                let data = pic.data();
+                let mut hasher = Sha256::new();
+                hasher.update(data);
+                let result = hasher.finalize();
+                let hash_hex = hex::encode(result);
+
+                // Determine extension from mime
+                let ext = match mime.as_str() {
+                    "image/jpeg" => "jpg",
+                    "image/png" => "png",
+                    "image/gif" => "gif",
+                    "image/webp" => "webp",
+                    _ => "bin",
+                };
+
+                let filename = format!("{hash_hex}.{ext}");
+                let file_path = dir.join(&filename);
+
+                if !file_path.exists() {
+                    fs::write(&file_path, data)
+                        .map_err(|e| format!("Failed to save cover image: {e}"))?;
+                }
+
+                cover_img_path = file_path.to_str().map(std::string::ToString::to_string);
+            }
+        }
+    }
 
     Ok(TrackMetadata {
         id: 0,
@@ -66,6 +106,7 @@ pub fn parse_file(path: &str) -> Result<TrackMetadata, String> {
         duration_secs,
         cover_mime,
         has_cover,
+        cover_img_path,
     })
 }
 
@@ -77,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_parse_non_existent_file() {
-        let result = parse_file("non_existent_file.mp3");
+        let result = parse_file("non_existent_file.mp3", None);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("File not found"));
     }
@@ -88,7 +129,7 @@ mod tests {
         writeln!(temp_file, "not an audio file").unwrap();
 
         let path = temp_file.path().to_str().unwrap();
-        let result = parse_file(path);
+        let result = parse_file(path, None);
 
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -99,7 +140,7 @@ mod tests {
     fn test_parse_valid_asset_file() {
         // Path relative to src-tauri directory where tests run
         let path = "../assets/01 TempleOS Hymn Risen (Remix).mp3";
-        let result = parse_file(path);
+        let result = parse_file(path, None);
 
         if Path::new(path).exists() {
             assert!(

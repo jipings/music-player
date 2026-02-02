@@ -29,8 +29,8 @@ pub fn add_tracks(conn: &mut Connection, tracks: &[TrackMetadata]) -> Result<()>
     let tx = conn.transaction()?;
     {
         let mut stmt = tx.prepare(
-            "INSERT OR IGNORE INTO tracks (path, title, artist, album, duration, cover_mime, has_cover) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT OR IGNORE INTO tracks (path, title, artist, album, duration, cover_mime, has_cover, cover_img_path) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         )?;
         for track in tracks {
             // Cast u64 to i64 for SQLite. Assuming duration fits in i64.
@@ -42,7 +42,8 @@ pub fn add_tracks(conn: &mut Connection, tracks: &[TrackMetadata]) -> Result<()>
                 track.album,
                 duration_i64,
                 track.cover_mime,
-                track.has_cover
+                track.has_cover,
+                track.cover_img_path
             ])?;
         }
     }
@@ -56,7 +57,7 @@ pub fn add_tracks(conn: &mut Connection, tracks: &[TrackMetadata]) -> Result<()>
 /// Returns an error if the query fails.
 pub fn get_tracks(conn: &Connection, title_query: Option<String>) -> Result<Vec<TrackMetadata>> {
     let mut query = String::from(
-        "SELECT id, path, title, artist, album, duration, cover_mime, has_cover FROM tracks",
+        "SELECT id, path, title, artist, album, duration, cover_mime, has_cover, cover_img_path FROM tracks",
     );
 
     if title_query.is_some() {
@@ -92,6 +93,7 @@ fn map_track_row(row: &rusqlite::Row<'_>) -> Result<TrackMetadata> {
         duration_secs,
         cover_mime: row.get(6)?,
         has_cover: row.get(7)?,
+        cover_img_path: row.get(8)?,
     })
 }
 
@@ -240,7 +242,7 @@ pub fn get_playlists(conn: &Connection) -> Result<Vec<Playlist>> {
 /// Returns an error if the query fails.
 pub fn get_tracks_by_playlist(conn: &Connection, playlist_id: &str) -> Result<Vec<TrackMetadata>> {
     let mut stmt = conn.prepare(
-        "SELECT t.id, t.path, t.title, t.artist, t.album, t.duration, t.cover_mime, t.has_cover 
+        "SELECT t.id, t.path, t.title, t.artist, t.album, t.duration, t.cover_mime, t.has_cover, t.cover_img_path 
          FROM tracks t
          JOIN playlist_tracks pt ON t.id = pt.track_id
          WHERE pt.playlist_id = ?1
@@ -339,6 +341,7 @@ mod tests {
             duration_secs: 180,
             cover_mime: None,
             has_cover: false,
+            cover_img_path: None,
         };
 
         add_tracks(&mut conn, &[track.clone()]).unwrap();
@@ -363,6 +366,7 @@ mod tests {
                 duration_secs: 0,
                 cover_mime: None,
                 has_cover: false,
+                cover_img_path: None,
             },
             TrackMetadata {
                 id: 0,
@@ -373,6 +377,7 @@ mod tests {
                 duration_secs: 0,
                 cover_mime: None,
                 has_cover: false,
+                cover_img_path: None,
             },
         ];
         add_tracks(&mut conn, &tracks).unwrap();
@@ -401,6 +406,7 @@ mod tests {
             duration_secs: 0,
             cover_mime: None,
             has_cover: false,
+            cover_img_path: None,
         };
         add_tracks(&mut conn, &[track]).unwrap();
 
@@ -469,6 +475,7 @@ mod tests {
             duration_secs: 0,
             cover_mime: None,
             has_cover: false,
+            cover_img_path: None,
         };
         add_tracks(&mut conn, &[track]).unwrap();
         let tracks = get_tracks(&conn, None).unwrap();

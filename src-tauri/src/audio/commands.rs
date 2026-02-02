@@ -91,7 +91,10 @@ pub fn add_folder(
             if let Some(extension) = file_path.extension() {
                 if let Some(ext_str) = extension.to_str() {
                     if supported_extensions.contains(&ext_str.to_lowercase().as_str()) {
-                        match parse_file(file_path.to_str().unwrap_or_default()) {
+                        match parse_file(
+                            file_path.to_str().unwrap_or_default(),
+                            Some(Path::new("images")),
+                        ) {
                             Ok(metadata) => tracks.push(metadata),
                             Err(e) => println!("Error parsing file {file_path:?}: {e}"), // Log error but continue
                         }
