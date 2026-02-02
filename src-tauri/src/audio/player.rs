@@ -30,17 +30,10 @@ pub fn init_audio_thread(app_handle: AppHandle) -> AudioPlayerState {
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        // Initialize Rodio
-        // In a real app, you might want to handle error more gracefully or retry,
-        // but for now we panic inside the thread if audio init fails (log it).
-        let stream_result = OutputStreamBuilder::open_default_stream();
-        if let Err(e) = stream_result {
-            eprintln!("Audio thread failed to open output stream: {e}");
-            return;
-        }
-        let stream = stream_result.unwrap();
-        let sink = Sink::connect_new(stream.mixer());
-
+        // Lazy initialization: only create stream when needed (first Play command)
+        // This avoids initializing CoreAudio during app startup on macOS
+        let mut stream = None;
+        let mut sink = None;
         let mut current_duration = Duration::from_secs(0);
 
         loop {
@@ -48,6 +41,29 @@ pub fn init_audio_thread(app_handle: AppHandle) -> AudioPlayerState {
             match rx.recv_timeout(Duration::from_millis(200)) {
                 Ok(cmd) => match cmd {
                     AudioCommand::Play(path) => {
+                        // Initialize stream and sink on first use
+                        if stream.is_none() {
+                            match OutputStreamBuilder::open_default_stream() {
+                                Ok(s) => {
+                                    let new_sink = Sink::connect_new(s.mixer());
+                                    stream = Some(s);
+                                    sink = Some(new_sink);
+                                }
+                                Err(e) => {
+                                    eprintln!("Audio thread failed to open output stream: {e}");
+                                    app_handle
+                                        .emit(
+                                            "player-error",
+                                            format!("Failed to initialize audio: {e}"),
+                                        )
+                                        .ok();
+                                    continue;
+                                }
+                            }
+                        }
+
+                        let sink_ref = sink.as_ref().unwrap();
+
                         match File::open(&path) {
                             Ok(file) => {
                                 let reader = BufReader::new(file);
@@ -60,9 +76,9 @@ pub fn init_audio_thread(app_handle: AppHandle) -> AudioPlayerState {
                                             current_duration = Duration::from_secs(0);
                                         }
 
-                                        sink.clear();
-                                        sink.append(source);
-                                        sink.play();
+                                        sink_ref.clear();
+                                        sink_ref.append(source);
+                                        sink_ref.play();
 
                                         // Notify frontend
                                         app_handle
@@ -89,46 +105,58 @@ pub fn init_audio_thread(app_handle: AppHandle) -> AudioPlayerState {
                         }
                     }
                     AudioCommand::Pause => {
-                        sink.pause();
-                        app_handle
-                            .emit("player-status", serde_json::json!({ "status": "paused" }))
-                            .ok();
+                        if let Some(s) = &sink {
+                            s.pause();
+                            app_handle
+                                .emit("player-status", serde_json::json!({ "status": "paused" }))
+                                .ok();
+                        }
                     }
                     AudioCommand::Resume => {
-                        sink.play();
-                        app_handle
-                            .emit("player-status", serde_json::json!({ "status": "playing" }))
-                            .ok();
+                        if let Some(s) = &sink {
+                            s.play();
+                            app_handle
+                                .emit("player-status", serde_json::json!({ "status": "playing" }))
+                                .ok();
+                        }
                     }
                     AudioCommand::Stop => {
-                        sink.stop();
-                        sink.clear();
-                        app_handle
-                            .emit("player-status", serde_json::json!({ "status": "stopped" }))
-                            .ok();
+                        if let Some(s) = &sink {
+                            s.stop();
+                            s.clear();
+                            app_handle
+                                .emit("player-status", serde_json::json!({ "status": "stopped" }))
+                                .ok();
+                        }
                     }
                     AudioCommand::Seek(secs) => {
-                        if let Err(e) = sink.try_seek(Duration::from_secs_f32(secs)) {
-                            eprintln!("Seek failed: {e}");
+                        if let Some(s) = &sink {
+                            if let Err(e) = s.try_seek(Duration::from_secs_f32(secs)) {
+                                eprintln!("Seek failed: {e}");
+                            }
                         }
                     }
                     AudioCommand::SetVolume(vol) => {
-                        sink.set_volume(vol);
+                        if let Some(s) = &sink {
+                            s.set_volume(vol);
+                        }
                     }
                 },
                 Err(mpsc::RecvTimeoutError::Timeout) => {
                     // Periodic update: send current position
-                    if !sink.empty() && !sink.is_paused() {
-                        let pos = sink.get_pos().as_secs_f64();
-                        app_handle
-                            .emit(
-                                "player-progress",
-                                serde_json::json!({
-                                    "position": pos,
-                                    "duration": current_duration.as_secs_f64()
-                                }),
-                            )
-                            .ok();
+                    if let Some(s) = &sink {
+                        if !s.empty() && !s.is_paused() {
+                            let pos = s.get_pos().as_secs_f64();
+                            app_handle
+                                .emit(
+                                    "player-progress",
+                                    serde_json::json!({
+                                        "position": pos,
+                                        "duration": current_duration.as_secs_f64()
+                                    }),
+                                )
+                                .ok();
+                        }
                     }
                 }
                 Err(mpsc::RecvTimeoutError::Disconnected) => {

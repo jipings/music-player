@@ -100,7 +100,7 @@ const Library: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="px-6 pb-12 space-y-12">
+          <div className="px-6 pb-12 space-y-12 mt-12">
             {/* Recently Played */}
             <LibrarySection
               title="Recently Played"

@@ -19,6 +19,7 @@ export const usePlayerSync = () => {
 
   usePlayerError((error) => {
     console.error('Player Error:', error);
+    alert(error);
     // Optionally set an error state in the store
   });
 };
