@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FolderPlus } from 'lucide-react';
 import { useLocalFolders } from '../../hooks/useLocalFolders';
 import FolderCard from './FolderCard';
+import { ask } from '@tauri-apps/plugin-dialog';
 
 const Local: React.FC = () => {
   const { folders, getFolders, addFolder, deleteFolders } = useLocalFolders();
@@ -28,7 +29,12 @@ const Local: React.FC = () => {
   };
 
   const handleDeleteFolder = async (id: string) => {
-    if (confirm('Are you sure you want to delete this folder?')) {
+    const confirmed = await ask('Are you sure you want to delete this folder?', {
+      title: 'Confirm Deletion',
+      kind: 'warning',
+    });
+
+    if (confirmed) {
       try {
         await deleteFolders([id]);
       } catch (error) {

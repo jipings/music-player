@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAudioStore } from '../../store/audioStore';
 import { useAudioController } from '../../hooks/useAudioController';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import {
   Heart,
   Shuffle,
@@ -51,7 +52,8 @@ const PlayerBar: React.FC = () => {
       <div className="w-1/3 flex items-center gap-4">
         <div className="w-14 h-14 bg-white/50 rounded overflow-hidden shadow-sm border border-white/40">
           <img
-            src={(currentTrack.has_cover && currentTrack.cover_mime) || ''}
+            hidden={!currentTrack.cover_img_path}
+            src={currentTrack.cover_img_path && convertFileSrc(currentTrack.cover_img_path)}
             alt="Album Art"
             className="w-full h-full object-cover"
           />
