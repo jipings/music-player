@@ -143,3 +143,76 @@ pub fn delete_folders(ids: Vec<String>, state: State<'_, AppState>) -> Result<()
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     operations::delete_folders(&conn, &ids).map_err(|e| e.to_string())
 }
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn create_playlist(name: String, state: State<'_, AppState>) -> Result<String, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::create_playlist(&conn, &name).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_playlists(state: State<'_, AppState>) -> Result<Vec<operations::Playlist>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::get_playlists(&conn).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_tracks_by_playlist(
+    playlist_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::scanner::parser::TrackMetadata>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::get_tracks_by_playlist(&conn, &playlist_id).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn add_tracks_to_playlist(
+    playlist_id: String,
+    track_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::add_tracks_to_playlist(&mut conn, &playlist_id, &track_ids)
+        .map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn delete_tracks_from_playlist(
+    playlist_id: String,
+    track_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::delete_tracks_from_playlist(&conn, &playlist_id, &track_ids)
+        .map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn delete_playlist(playlist_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::delete_playlist(&conn, &playlist_id).map_err(|e| e.to_string())
+}

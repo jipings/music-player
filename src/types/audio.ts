@@ -41,3 +41,9 @@ export interface Track {
   cover_mime?: string;
   has_cover: boolean;
 }
+
+export interface Playlist {
+  id: string;
+  name: string;
+  createdAt: string;
+}

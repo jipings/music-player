@@ -12,6 +12,14 @@ pub struct LocalFolder {
     pub song_count: i32,
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct Playlist {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
 /// Adds multiple tracks to the database.
 ///
 /// # Errors
@@ -189,6 +197,128 @@ pub fn delete_folders(conn: &Connection, ids: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// Creates a new playlist.
+///
+/// # Errors
+///
+/// Returns an error if the insertion fails.
+pub fn create_playlist(conn: &Connection, name: &str) -> Result<String> {
+    let id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO playlists (id, name) VALUES (?1, ?2)",
+        params![id, name],
+    )?;
+    Ok(id)
+}
+
+/// Retrieves playlists from the database.
+///
+/// # Errors
+///
+/// Returns an error if the query fails.
+pub fn get_playlists(conn: &Connection) -> Result<Vec<Playlist>> {
+    let mut stmt = conn.prepare("SELECT id, name, created_at FROM playlists ORDER BY name")?;
+    let rows = stmt.query_map([], |row| {
+        Ok(Playlist {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            created_at: row.get(2)?,
+        })
+    })?;
+
+    let mut playlists = Vec::new();
+    for playlist in rows {
+        playlists.push(playlist?);
+    }
+    Ok(playlists)
+}
+
+/// Retrieves tracks belonging to a specific playlist.
+///
+/// # Errors
+///
+/// Returns an error if the query fails.
+pub fn get_tracks_by_playlist(
+    conn: &Connection,
+    playlist_id: &str,
+) -> Result<Vec<TrackMetadata>> {
+    let mut stmt = conn.prepare(
+        "SELECT t.id, t.path, t.title, t.artist, t.album, t.duration, t.cover_mime, t.has_cover 
+         FROM tracks t
+         JOIN playlist_tracks pt ON t.id = pt.track_id
+         WHERE pt.playlist_id = ?1
+         ORDER BY pt.added_at",
+    )?;
+
+    let rows = stmt.query_map(params![playlist_id], map_track_row)?;
+    let mut tracks = Vec::new();
+    for track in rows {
+        tracks.push(track?);
+    }
+    Ok(tracks)
+}
+
+/// Adds tracks to a playlist.
+///
+/// # Errors
+///
+/// Returns an error if the transaction fails or insertion fails.
+pub fn add_tracks_to_playlist(
+    conn: &mut Connection,
+    playlist_id: &str,
+    track_ids: &[i64],
+) -> Result<()> {
+    let tx = conn.transaction()?;
+    {
+        let mut stmt = tx.prepare(
+            "INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id) VALUES (?1, ?2)",
+        )?;
+        for track_id in track_ids {
+            stmt.execute(params![playlist_id, track_id])?;
+        }
+    }
+    tx.commit()
+}
+
+/// Deletes tracks from a playlist.
+///
+/// # Errors
+///
+/// Returns an error if deletion fails.
+pub fn delete_tracks_from_playlist(
+    conn: &Connection,
+    playlist_id: &str,
+    track_ids: &[i64],
+) -> Result<()> {
+    if track_ids.is_empty() {
+        return Ok(());
+    }
+
+    let query = format!(
+        "DELETE FROM playlist_tracks WHERE playlist_id = ?1 AND track_id IN ({})",
+        track_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",")
+    );
+
+    let mut stmt = conn.prepare(&query)?;
+    let mut params: Vec<&dyn rusqlite::ToSql> = vec![&playlist_id];
+    for id in track_ids {
+        params.push(id);
+    }
+
+    stmt.execute(params.as_slice())?;
+    Ok(())
+}
+
+/// Deletes a playlist.
+///
+/// # Errors
+///
+/// Returns an error if deletion fails.
+pub fn delete_playlist(conn: &Connection, playlist_id: &str) -> Result<()> {
+    conn.execute("DELETE FROM playlists WHERE id = ?1", params![playlist_id])?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -318,5 +448,54 @@ mod tests {
 
         let folders = get_folders(&conn, None).unwrap();
         assert!(folders.is_empty());
+    }
+
+    #[test]
+    fn test_playlist_operations() {
+        let mut conn = setup_db();
+
+        // 1. Create Playlists
+        let pid1 = create_playlist(&conn, "Favorites").unwrap();
+        let pid2 = create_playlist(&conn, "Rock").unwrap();
+
+        let playlists = get_playlists(&conn).unwrap();
+        assert_eq!(playlists.len(), 2);
+        assert!(playlists.iter().any(|p| p.name == "Favorites"));
+
+        // 2. Add Tracks
+        let track = TrackMetadata {
+            id: 0,
+            path: "/s1.mp3".to_string(),
+            title: Some("S1".into()),
+            artist: None,
+            album: None,
+            duration_secs: 0,
+            cover_mime: None,
+            has_cover: false,
+        };
+        add_tracks(&mut conn, &[track]).unwrap();
+        let tracks = get_tracks(&conn, None).unwrap();
+        let track_id = tracks[0].id;
+
+        add_tracks_to_playlist(&mut conn, &pid1, &[track_id]).unwrap();
+
+        // 3. Get Tracks by Playlist
+        let p_tracks = get_tracks_by_playlist(&conn, &pid1).unwrap();
+        assert_eq!(p_tracks.len(), 1);
+        assert_eq!(p_tracks[0].id, track_id);
+
+        let empty_tracks = get_tracks_by_playlist(&conn, &pid2).unwrap();
+        assert!(empty_tracks.is_empty());
+
+        // 4. Remove Tracks from Playlist
+        delete_tracks_from_playlist(&conn, &pid1, &[track_id]).unwrap();
+        let p_tracks_after = get_tracks_by_playlist(&conn, &pid1).unwrap();
+        assert!(p_tracks_after.is_empty());
+
+        // 5. Delete Playlist
+        delete_playlist(&conn, &pid1).unwrap();
+        let playlists_after = get_playlists(&conn).unwrap();
+        assert_eq!(playlists_after.len(), 1);
+        assert_eq!(playlists_after[0].id, pid2);
     }
 }

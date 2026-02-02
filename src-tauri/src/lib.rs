@@ -3,8 +3,9 @@ pub mod database;
 pub mod scanner;
 
 use audio::commands::{
-    add_folder, delete_folders, get_folders, get_tracks, pause, play, resume, seek, set_volume,
-    stop,
+    add_folder, add_tracks_to_playlist, create_playlist, delete_folders, delete_playlist,
+    delete_tracks_from_playlist, get_folders, get_playlists, get_tracks, get_tracks_by_playlist,
+    pause, play, resume, seek, set_volume, stop,
 };
 use audio::player::init_audio_thread;
 use database::AppState;
@@ -41,6 +42,13 @@ pub fn run() {
                 Err(e) => panic!("Database init failed: {e}"),
             };
 
+            // Initialize default playlists
+            let default_playlists = ["Recent", "Favorites", "Default"];
+            for name in default_playlists {
+                // Ignore error if already exists (name is UNIQUE)
+                let _ = database::operations::create_playlist(&conn, name);
+            }
+
             app.manage(AppState {
                 db: Mutex::new(conn),
             });
@@ -59,7 +67,13 @@ pub fn run() {
             add_folder,
             get_folders,
             delete_folders,
-            get_tracks
+            get_tracks,
+            create_playlist,
+            get_playlists,
+            get_tracks_by_playlist,
+            add_tracks_to_playlist,
+            delete_tracks_from_playlist,
+            delete_playlist
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
