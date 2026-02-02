@@ -22,8 +22,13 @@ const Library: React.FC = () => {
   useEffect(() => {
     if (currentView === 'playlist' && selectedPlaylistId) {
       getPlaylistTracks(selectedPlaylistId);
+    } else if (currentView === 'library') {
+      const recent = playlists.find((p) => p.name === 'Recent');
+      if (recent) {
+        getPlaylistTracks(recent.id);
+      }
     }
-  }, [currentView, selectedPlaylistId, getPlaylistTracks]);
+  }, [currentView, selectedPlaylistId, playlists, getPlaylistTracks]);
 
   const madeForYouItems = tracks.map((track) => ({
     id: String(track.id),
@@ -40,15 +45,10 @@ const Library: React.FC = () => {
   }));
 
   const handleItemClick = (item: Album) => {
-    // Determine if we are clicking a track from 'tracks' or 'currentPlaylistTracks'
-    // Since IDs might overlap (they are database IDs), we look in both or prefer the current context.
-    // If in playlist view, look in playlist tracks.
-    let track;
-    if (currentView === 'playlist') {
-      track = currentPlaylistTracks.find((t) => String(t.id) === item.id);
-    } else {
-      track = tracks.find((t) => String(t.id) === item.id);
-    }
+    // Search in current context first, then fallback
+    const track =
+      currentPlaylistTracks.find((t) => String(t.id) === item.id) ||
+      tracks.find((t) => String(t.id) === item.id);
 
     if (track) {
       audioController.play(track.path);
@@ -57,7 +57,6 @@ const Library: React.FC = () => {
       console.log('Clicked mock or unknown album:', item.title);
     }
   };
-
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
 
   return (
@@ -80,7 +79,7 @@ const Library: React.FC = () => {
             {/* Recently Played */}
             <LibrarySection
               title="Recently Played"
-              items={mockAlbums}
+              items={playlistItems}
               actionLabel="EXPLORE ALL"
               titleSuffix={
                 <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
@@ -88,9 +87,11 @@ const Library: React.FC = () => {
               backgroundDecoration={
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none"></div>
               }
+              onItemClick={handleItemClick}
             />
 
             {/* Made For You */}
+
             <LibrarySection
               title="Made For You"
               items={madeForYouItems.length > 0 ? madeForYouItems : [...mockAlbums].reverse()}
