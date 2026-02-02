@@ -51,11 +51,7 @@ const PlayerBar: React.FC = () => {
       <div className="w-1/3 flex items-center gap-4">
         <div className="w-14 h-14 bg-white/50 rounded overflow-hidden shadow-sm border border-white/40">
           <img
-            src={
-              currentTrack.has_cover && currentTrack.cover_mime
-                ? `https://placehold.co/56/2a2a2a/white?text=Music` // TODO: Implement real cover art loading
-                : 'https://placehold.co/56/2a2a2a/white?text=Music'
-            }
+            src={(currentTrack.has_cover && currentTrack.cover_mime) || ''}
             alt="Album Art"
             className="w-full h-full object-cover"
           />

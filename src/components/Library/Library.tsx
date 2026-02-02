@@ -60,9 +60,7 @@ const Library: React.FC = () => {
     id: String(track.id),
     title: track.title || track.path.split('/').pop() || 'Unknown Title',
     artist: track.artist || 'Unknown Artist',
-    coverUrl: track.cover_img_path
-      ? convertFileSrc(track.cover_img_path)
-      : 'https://placehold.co/200/555555/white?text=Track',
+    coverUrl: track.cover_img_path ? convertFileSrc(track.cover_img_path) : '',
   });
 
   const madeForYouItems = defaultTracks.map(mapTrackToAlbum);
