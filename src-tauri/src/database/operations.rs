@@ -117,11 +117,11 @@ pub fn delete_tracks(conn: &Connection, ids: &[i64]) -> Result<()> {
 /// # Errors
 ///
 /// Returns an error if the insertion fails.
-pub fn add_folder(conn: &Connection, name: &str, path: &str) -> Result<String> {
+pub fn add_folder(conn: &Connection, name: &str, path: &str, song_count: i32) -> Result<String> {
     let id = Uuid::new_v4().to_string();
     conn.execute(
-        "INSERT INTO local_folders (id, name, path, song_count) VALUES (?1, ?2, ?3, 0)",
-        params![id, name, path],
+        "INSERT INTO local_folders (id, name, path, song_count) VALUES (?1, ?2, ?3, ?4)",
+        params![id, name, path, song_count],
     )?;
     Ok(id)
 }
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn test_add_and_get_folders() {
         let conn = setup_db();
-        add_folder(&conn, "Music", "/home/music").unwrap();
+        add_folder(&conn, "Music", "/home/music", 0).unwrap();
 
         let folders = get_folders(&conn, None).unwrap();
         assert_eq!(folders.len(), 1);
@@ -301,8 +301,8 @@ mod tests {
     #[test]
     fn test_get_folders_filtered() {
         let conn = setup_db();
-        add_folder(&conn, "Music 1", "/path/1").unwrap();
-        add_folder(&conn, "Music 2", "/path/2").unwrap();
+        add_folder(&conn, "Music 1", "/path/1", 10).unwrap();
+        add_folder(&conn, "Music 2", "/path/2", 5).unwrap();
 
         let results = get_folders(&conn, Some("Music 1".to_string())).unwrap();
         assert_eq!(results.len(), 1);
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn test_delete_folders() {
         let conn = setup_db();
-        let id = add_folder(&conn, "To Delete", "/delete").unwrap();
+        let id = add_folder(&conn, "To Delete", "/delete", 0).unwrap();
 
         delete_folders(&conn, &[id]).unwrap();
 

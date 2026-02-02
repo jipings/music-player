@@ -1,6 +1,9 @@
 use crate::audio::player::{AudioCommand, AudioPlayerState};
 use crate::database::{operations, AppState};
+use crate::scanner::parser::parse_file;
+use std::path::Path;
 use tauri::{command, State};
+use walkdir::WalkDir;
 
 /// # Errors
 ///
@@ -74,8 +77,35 @@ pub fn add_folder(
     path: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    operations::add_folder(&conn, &name, &path).map_err(|e| e.to_string())
+    let path_obj = Path::new(&path);
+    if !path_obj.exists() {
+        return Err(format!("Directory does not exist: {path}"));
+    }
+
+    let mut tracks = Vec::new();
+    let supported_extensions = ["mp3", "flac", "wav", "ogg", "m4a", "aac"];
+
+    for entry in WalkDir::new(&path).into_iter().filter_map(Result::ok) {
+        let file_path = entry.path();
+        if file_path.is_file() {
+            if let Some(extension) = file_path.extension() {
+                if let Some(ext_str) = extension.to_str() {
+                    if supported_extensions.contains(&ext_str.to_lowercase().as_str()) {
+                        match parse_file(file_path.to_str().unwrap_or_default()) {
+                            Ok(metadata) => tracks.push(metadata),
+                            Err(e) => println!("Error parsing file {file_path:?}: {e}"), // Log error but continue
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let song_count = tracks.len() as i32;
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+
+    operations::add_tracks(&mut conn, &tracks).map_err(|e| e.to_string())?;
+    operations::add_folder(&conn, &name, &path, song_count).map_err(|e| e.to_string())
 }
 
 /// # Errors
