@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Run lint-staged for frontend and formatting
+npx lint-staged
+
+# Run cargo fmt and clippy if Rust files are changed
+if git diff --cached --name-only | grep -q "^src-tauri/"; then
+  echo "Rust changes detected. Running fmt and clippy..."
+  cd src-tauri
+  cargo fmt -- --check || exit 1
+  cargo clippy --all-features -- -D warnings || exit 1
+fi

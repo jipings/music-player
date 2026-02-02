@@ -19,7 +19,7 @@ export const LibrarySection: React.FC<LibrarySectionProps> = ({
   titleSuffix,
   backgroundDecoration,
   onItemClick,
-  onActionClick
+  onActionClick,
 }) => {
   return (
     <section className="bg-white/10 backdrop-blur-xl rounded-[3rem] border border-white/20 p-8 shadow-2xl overflow-hidden relative">

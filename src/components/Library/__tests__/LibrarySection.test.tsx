@@ -28,19 +28,26 @@ describe('LibrarySection', () => {
   it('calls onItemClick when album is clicked', () => {
     const onItemClick = jest.fn();
     render(<LibrarySection title="Test Section" items={mockAlbums} onItemClick={onItemClick} />);
-    
+
     // Click on the album card container
     // finding by text returns the h3, closest gets the container
     const albumTitle = screen.getByText('Test Album');
     const card = albumTitle.closest('div.group');
     fireEvent.click(card!);
-    
+
     expect(onItemClick).toHaveBeenCalledWith(mockAlbums[0]);
   });
 
   it('calls onActionClick when action button is clicked', () => {
     const onActionClick = jest.fn();
-    render(<LibrarySection title="Test Section" items={mockAlbums} actionLabel="Click Me" onActionClick={onActionClick} />);
+    render(
+      <LibrarySection
+        title="Test Section"
+        items={mockAlbums}
+        actionLabel="Click Me"
+        onActionClick={onActionClick}
+      />,
+    );
     fireEvent.click(screen.getByText('Click Me'));
     expect(onActionClick).toHaveBeenCalled();
   });

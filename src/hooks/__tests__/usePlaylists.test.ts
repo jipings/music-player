@@ -45,18 +45,23 @@ describe('usePlaylists', () => {
     const { result } = renderHook(() => usePlaylists());
 
     await act(async () => {
-        await result.current.getPlaylists();
+      await result.current.getPlaylists();
     });
 
     await waitFor(() => {
-        expect(result.current.playlists).toEqual(mockPlaylists);
+      expect(result.current.playlists).toEqual(mockPlaylists);
     });
-    
+
     expect(invoke).toHaveBeenCalledWith('get_playlists');
   });
 
   it('should create playlist and refresh', async () => {
-    (invoke as jest.Mock).mockResolvedValueOnce('new-id').mockResolvedValueOnce([...mockPlaylists, { id: 'new-id', name: 'New List', createdAt: 'now' }]);
+    (invoke as jest.Mock)
+      .mockResolvedValueOnce('new-id')
+      .mockResolvedValueOnce([
+        ...mockPlaylists,
+        { id: 'new-id', name: 'New List', createdAt: 'now' },
+      ]);
 
     const { result } = renderHook(() => usePlaylists());
 
@@ -66,9 +71,9 @@ describe('usePlaylists', () => {
 
     expect(invoke).toHaveBeenCalledWith('create_playlist', { name: 'New List' });
     expect(invoke).toHaveBeenCalledWith('get_playlists');
-    
+
     await waitFor(() => {
-        expect(result.current.playlists).toHaveLength(3);
+      expect(result.current.playlists).toHaveLength(3);
     });
   });
 
@@ -82,9 +87,9 @@ describe('usePlaylists', () => {
     });
 
     expect(invoke).toHaveBeenCalledWith('get_tracks_by_playlist', { playlistId: '1' });
-    
+
     await waitFor(() => {
-        expect(result.current.currentPlaylistTracks).toEqual(mockTracks);
+      expect(result.current.currentPlaylistTracks).toEqual(mockTracks);
     });
   });
 });

@@ -53,9 +53,9 @@ describe('useTracks', () => {
     });
 
     await waitFor(() => {
-        expect(result.current.tracks).toEqual(mockTracks);
+      expect(result.current.tracks).toEqual(mockTracks);
     });
-    
+
     expect(invoke).toHaveBeenCalledWith('get_tracks', { titleFilter: undefined });
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
@@ -72,7 +72,7 @@ describe('useTracks', () => {
     });
 
     await waitFor(() => {
-        expect(result.current.error).toContain(errorMessage);
+      expect(result.current.error).toContain(errorMessage);
     });
 
     expect(invoke).toHaveBeenCalledWith('get_tracks', { titleFilter: undefined });

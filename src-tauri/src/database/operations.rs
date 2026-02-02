@@ -238,10 +238,7 @@ pub fn get_playlists(conn: &Connection) -> Result<Vec<Playlist>> {
 /// # Errors
 ///
 /// Returns an error if the query fails.
-pub fn get_tracks_by_playlist(
-    conn: &Connection,
-    playlist_id: &str,
-) -> Result<Vec<TrackMetadata>> {
+pub fn get_tracks_by_playlist(conn: &Connection, playlist_id: &str) -> Result<Vec<TrackMetadata>> {
     let mut stmt = conn.prepare(
         "SELECT t.id, t.path, t.title, t.artist, t.album, t.duration, t.cover_mime, t.has_cover 
          FROM tracks t

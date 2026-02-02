@@ -68,22 +68,19 @@ export const usePlaylists = () => {
     }
   }, []);
 
-  const addTracksToPlaylist = useCallback(
-    async (playlistId: string, trackIds: number[]) => {
-      setLoading(true);
-      setError(null);
-      try {
-        await invoke('add_tracks_to_playlist', { playlistId, trackIds });
-        // Optionally refresh current playlist tracks if looking at that playlist
-      } catch (err) {
-        setError(String(err));
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  const addTracksToPlaylist = useCallback(async (playlistId: string, trackIds: number[]) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await invoke('add_tracks_to_playlist', { playlistId, trackIds });
+      // Optionally refresh current playlist tracks if looking at that playlist
+    } catch (err) {
+      setError(String(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const deleteTracksFromPlaylist = useCallback(
     async (playlistId: string, trackIds: number[]) => {
