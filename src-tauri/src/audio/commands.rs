@@ -112,7 +112,43 @@ pub fn add_folder(
     let song_count = tracks.len() as i32;
     let mut conn = state.db.lock().map_err(|e| e.to_string())?;
 
+    // 1. Add tracks to the general tracks table
     operations::add_tracks(&mut conn, &tracks).map_err(|e| e.to_string())?;
+
+    // 2. Find the "Default" playlist ID
+    let playlists = operations::get_playlists(&conn).map_err(|e| e.to_string())?;
+    let default_playlist = playlists.iter().find(|p| p.name == "Default");
+
+    if let Some(playlist) = default_playlist {
+        // 3. Get the IDs of the tracks we just added/processed
+        // We query by path to get the database-assigned IDs
+        let paths: Vec<String> = tracks.into_iter().map(|t| t.path).collect();
+        if !paths.is_empty() {
+            let track_ids: Vec<i64> = {
+                let placeholders = paths.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let mut stmt = conn
+                    .prepare(&format!(
+                        "SELECT id FROM tracks WHERE path IN ({placeholders})"
+                    ))
+                    .map_err(|e| e.to_string())?;
+                let rows = stmt
+                    .query_map(rusqlite::params_from_iter(paths), |row| row.get(0))
+                    .map_err(|e| e.to_string())?;
+                let mut ids = Vec::new();
+                for r in rows {
+                    ids.push(r.map_err(|e| e.to_string())?);
+                }
+                ids
+            };
+
+            // 4. Add tracks to the Default playlist
+            if !track_ids.is_empty() {
+                operations::add_tracks_to_playlist(&mut conn, &playlist.id, &track_ids)
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
     operations::add_folder(&conn, &name, &path, song_count).map_err(|e| e.to_string())
 }
 
