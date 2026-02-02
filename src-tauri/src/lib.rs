@@ -2,8 +2,12 @@ pub mod audio;
 pub mod database;
 pub mod scanner;
 
-use audio::commands::{pause, play, resume, seek, set_volume, stop};
+use audio::commands::{
+    add_folder, delete_folders, get_folders, pause, play, resume, seek, set_volume, stop,
+};
 use audio::player::init_audio_thread;
+use database::AppState;
+use std::sync::Mutex;
 use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -28,16 +32,32 @@ pub fn run() {
             app.manage(player_state);
 
             // Initialize DB
-            match database::schema::init_db() {
-                Ok(_) => println!("Database initialized"),
-                Err(e) => eprintln!("Database init failed: {e}"),
-            }
+            let conn = match database::schema::init_db() {
+                Ok(c) => {
+                    println!("Database initialized");
+                    c
+                }
+                Err(e) => panic!("Database init failed: {e}"),
+            };
+
+            app.manage(AppState {
+                db: Mutex::new(conn),
+            });
 
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            greet, play, pause, resume, stop, seek, set_volume
+            greet,
+            play,
+            pause,
+            resume,
+            stop,
+            seek,
+            set_volume,
+            add_folder,
+            get_folders,
+            delete_folders
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

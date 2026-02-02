@@ -28,5 +28,15 @@ pub fn create_tables(conn: &Connection) -> Result<(), rusqlite::Error> {
         )",
         [],
     )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS local_folders (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            path TEXT NOT NULL UNIQUE,
+            song_count INTEGER DEFAULT 0
+        )",
+        [],
+    )?;
     Ok(())
 }

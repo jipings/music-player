@@ -23,3 +23,10 @@ export interface SeekArgs {
 export interface SetVolumeArgs {
   volume: number;
 }
+
+export interface LocalFolder {
+  id: string;
+  name: string;
+  path: string;
+  songCount: number;
+}

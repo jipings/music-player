@@ -1,29 +1,40 @@
-import React, { useState } from 'react';
-import { Plus, FolderPlus } from 'lucide-react';
-import { mockFolders, LocalFolder } from '../../mockData';
+import React, { useState, useEffect } from 'react';
+import { FolderPlus } from 'lucide-react';
+import { useLocalFolders } from '../../hooks/useLocalFolders';
 import FolderCard from './FolderCard';
 
 const Local: React.FC = () => {
-  const [folders, setFolders] = useState<LocalFolder[]>(mockFolders);
+  const { folders, getFolders, addFolder, deleteFolders } = useLocalFolders();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderPath, setNewFolderPath] = useState('');
 
-  const handleAddFolder = (e: React.FormEvent) => {
+  useEffect(() => {
+    getFolders();
+  }, [getFolders]);
+
+  const handleAddFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName || !newFolderPath) return;
 
-    const newFolder: LocalFolder = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newFolderName,
-      path: newFolderPath,
-      songCount: 0,
-    };
+    try {
+      await addFolder(newFolderName, newFolderPath);
+      setNewFolderName('');
+      setNewFolderPath('');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to add folder:', error);
+    }
+  };
 
-    setFolders([...folders, newFolder]);
-    setNewFolderName('');
-    setNewFolderPath('');
-    setIsModalOpen(false);
+  const handleDeleteFolder = async (id: string) => {
+    if (confirm('Are you sure you want to delete this folder?')) {
+      try {
+        await deleteFolders([id]);
+      } catch (error) {
+        console.error('Failed to delete folder:', error);
+      }
+    }
   };
 
   return (
@@ -44,7 +55,7 @@ const Local: React.FC = () => {
         {/* Folders Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {folders.map((folder) => (
-            <FolderCard key={folder.id} folder={folder} />
+            <FolderCard key={folder.id} folder={folder} onDelete={handleDeleteFolder} />
           ))}
 
           {/* Add Folder Card (Empty State / Shortcut) */}
