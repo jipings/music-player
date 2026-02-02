@@ -1,10 +1,11 @@
 use rusqlite::Connection;
+use std::path::Path;
 
 /// # Errors
 ///
 /// Returns an error if the database connection cannot be opened or if table creation fails.
-pub fn init_db() -> Result<Connection, rusqlite::Error> {
-    let conn = Connection::open("music_player.db")?;
+pub fn init_db<P: AsRef<Path>>(db_path: P) -> Result<Connection, rusqlite::Error> {
+    let conn = Connection::open(db_path)?;
     conn.execute("PRAGMA foreign_keys = ON;", [])?;
     create_tables(&conn)?;
     Ok(conn)

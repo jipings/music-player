@@ -33,14 +33,23 @@ pub fn run() {
             // Manage the state so commands can access it
             app.manage(player_state);
 
-            // Initialize DB
-            let conn = match database::schema::init_db() {
-                Ok(c) => {
-                    println!("Database initialized");
-                    c
-                }
-                Err(e) => panic!("Database init failed: {e}"),
-            };
+            // Initialize DB with proper app data directory
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get app data directory: {e}"))?;
+
+            // Create app data directory if it doesn't exist
+            std::fs::create_dir_all(&app_data_dir)
+                .map_err(|e| format!("Failed to create app data directory: {e}"))?;
+
+            let db_path = app_data_dir.join("music_player.db");
+            println!("Database path: {}", db_path.display());
+
+            let conn = database::schema::init_db(&db_path)
+                .map_err(|e| format!("Database init failed: {e}"))?;
+
+            println!("Database initialized successfully");
 
             // Initialize default playlists
             let default_playlists = ["Recent", "Favorites", "Default"];
