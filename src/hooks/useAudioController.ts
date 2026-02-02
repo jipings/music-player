@@ -1,9 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
-import { PlayArgs, SeekArgs, SetVolumeArgs } from '../types/audio';
 
 export const audioController = {
   play: async (path: string): Promise<void> => {
-    return await invoke<void>('play', { path } as PlayArgs);
+    return await invoke<void>('play', { path });
   },
 
   pause: async (): Promise<void> => {
@@ -19,11 +18,11 @@ export const audioController = {
   },
 
   seek: async (seconds: number): Promise<void> => {
-    return await invoke<void>('seek', { seconds } as SeekArgs);
+    return await invoke<void>('seek', { seconds });
   },
 
   setVolume: async (volume: number): Promise<void> => {
-    return await invoke<void>('set_volume', { volume } as SetVolumeArgs);
+    return await invoke<void>('set_volume', { volume });
   },
 };
 

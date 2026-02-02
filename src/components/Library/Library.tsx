@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
 import { useAudioStore } from '../../store/audioStore';
-import { mockAlbums } from '../../mockData';
+import { mockAlbums, Album } from '../../mockData';
 import { Play } from 'lucide-react';
 import { LibrarySection } from './LibrarySection';
 import { useTracks } from '../../hooks/useTracks';
+import { useAudioController } from '../../hooks/useAudioController';
 
 const Library: React.FC = () => {
-  const { currentTrack } = useAudioStore();
+  const { currentTrack, setCurrentTrack } = useAudioStore();
   const { tracks, getTracks } = useTracks();
+  const audioController = useAudioController();
 
   useEffect(() => {
     getTracks();
@@ -19,6 +21,16 @@ const Library: React.FC = () => {
     artist: track.artist || 'Unknown Artist',
     coverUrl: 'https://placehold.co/200/555555/white?text=Track',
   }));
+
+  const handleItemClick = (item: Album) => {
+    const track = tracks.find((t) => String(t.id) === item.id);
+    if (track) {
+      audioController.play(track.path);
+      setCurrentTrack(track);
+    } else {
+      console.log('Clicked mock album:', item.title);
+    }
+  };
 
   return (
     <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar">
@@ -78,6 +90,7 @@ const Library: React.FC = () => {
             backgroundDecoration={
               <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none"></div>
             }
+            onItemClick={handleItemClick}
           />
         </div>
       </div>
@@ -86,7 +99,7 @@ const Library: React.FC = () => {
         <div className="fixed bottom-28 right-10 p-5 bg-indigo-600/80 backdrop-blur-2xl border border-white/30 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] z-50 text-white font-black tracking-tight flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-500">
           <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
           <span className="opacity-60 text-[10px] uppercase tracking-widest">Now Playing</span>
-          {currentTrack}
+          {currentTrack.title || currentTrack.path.split('/').pop()}
         </div>
       )}
     </div>

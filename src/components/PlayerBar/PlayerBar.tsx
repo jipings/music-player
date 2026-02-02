@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAudioStore } from '../../store/audioStore';
+import { useAudioController } from '../../hooks/useAudioController';
 import {
   Heart,
   Shuffle,
@@ -12,13 +13,37 @@ import {
   Volume2,
 } from 'lucide-react';
 
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+};
+
 const PlayerBar: React.FC = () => {
-  const { isPlaying, setIsPlaying, volume, setVolume } = useAudioStore();
+  const { isPlaying, currentTrack, volume, duration, currentTime } = useAudioStore();
+  const audioController = useAudioController();
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    // TODO: Invoke Tauri command to play/pause
+    if (isPlaying) {
+      audioController.pause();
+    } else {
+      if (currentTrack) {
+        audioController.resume();
+      }
+    }
   };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    audioController.seek(time);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vol = parseFloat(e.target.value);
+    audioController.setVolume(vol);
+  };
+
+  if (!currentTrack) return null;
 
   return (
     <div className="h-24 bg-white/60 backdrop-blur-xl text-gray-900 border-t border-white/30 flex items-center justify-between px-6 z-50 shadow-2xl">
@@ -26,17 +51,21 @@ const PlayerBar: React.FC = () => {
       <div className="w-1/3 flex items-center gap-4">
         <div className="w-14 h-14 bg-white/50 rounded overflow-hidden shadow-sm border border-white/40">
           <img
-            src="https://placehold.co/56/2a2a2a/white?text=MH"
+            src={
+              currentTrack.has_cover && currentTrack.cover_mime
+                ? `https://placehold.co/56/2a2a2a/white?text=Music` // TODO: Implement real cover art loading
+                : 'https://placehold.co/56/2a2a2a/white?text=Music'
+            }
             alt="Album Art"
             className="w-full h-full object-cover"
           />
         </div>
         <div>
-          <div className="font-semibold text-sm hover:underline cursor-pointer">
-            Midnight Horizons
+          <div className="font-semibold text-sm hover:underline cursor-pointer truncate max-w-[200px]">
+            {currentTrack.title || currentTrack.path.split('/').pop()}
           </div>
-          <div className="text-xs text-gray-600 hover:text-gray-900 hover:underline cursor-pointer">
-            Luna Echo
+          <div className="text-xs text-gray-600 hover:text-gray-900 hover:underline cursor-pointer truncate max-w-[200px]">
+            {currentTrack.artist || 'Unknown Artist'}
           </div>
         </div>
         <button className="ml-2 text-gray-500 hover:text-red-500">
@@ -71,11 +100,17 @@ const PlayerBar: React.FC = () => {
           </button>
         </div>
         <div className="w-full max-w-md flex items-center space-x-2 text-xs text-gray-600 font-mono">
-          <span>1:42</span>
-          <div className="flex-1 h-1 bg-gray-400/50 rounded-full overflow-hidden group cursor-pointer">
-            <div className="w-1/3 h-full bg-gray-900 group-hover:bg-indigo-600 transition-colors"></div>
-          </div>
-          <span>3:45</span>
+          <span>{formatTime(currentTime)}</span>
+          <input
+            type="range"
+            min="0"
+            max={duration || 1}
+            step="0.1"
+            value={currentTime}
+            onChange={handleSeek}
+            className="flex-1 h-1 bg-gray-400/50 rounded-lg appearance-none cursor-pointer accent-gray-900 hover:accent-indigo-600"
+          />
+          <span>{formatTime(duration)}</span>
         </div>
       </div>
 
@@ -92,7 +127,7 @@ const PlayerBar: React.FC = () => {
             max="1"
             step="0.01"
             value={volume}
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
+            onChange={handleVolumeChange}
             className="w-full h-1 bg-gray-400/50 rounded-lg appearance-none cursor-pointer accent-gray-900 hover:accent-indigo-600"
           />
         </div>

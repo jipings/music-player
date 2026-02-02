@@ -4,10 +4,12 @@ import Local from './components/Local/Local';
 import PlayerBar from './components/PlayerBar/PlayerBar';
 import bgImage from './assets/default.jpeg';
 import { useUiStore } from './store/uiStore';
+import { usePlayerSync } from './hooks/usePlayerSync';
 import './App.css';
 
 function App() {
   const { currentView } = useUiStore();
+  usePlayerSync();
 
   return (
     <div
