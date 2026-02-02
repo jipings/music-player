@@ -2,7 +2,7 @@ use crate::audio::player::{AudioCommand, AudioPlayerState};
 use crate::database::{operations, AppState};
 use crate::scanner::parser::parse_file;
 use std::path::Path;
-use tauri::{command, State};
+use tauri::{command, AppHandle, Manager, State};
 use walkdir::WalkDir;
 
 /// # Errors
@@ -73,6 +73,7 @@ pub fn set_volume(volume: f32, state: State<'_, AudioPlayerState>) -> Result<(),
 #[command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn add_folder(
+    app_handle: AppHandle,
     name: String,
     path: String,
     state: State<'_, AppState>,
@@ -81,6 +82,12 @@ pub fn add_folder(
     if !path_obj.exists() {
         return Err(format!("Directory does not exist: {path}"));
     }
+
+    let cache_dir = app_handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("Failed to get app cache dir: {e}"))?;
+    let images_dir = cache_dir.join("images");
 
     let mut tracks = Vec::new();
     let supported_extensions = ["mp3", "flac", "wav", "ogg", "m4a", "aac"];
@@ -91,10 +98,8 @@ pub fn add_folder(
             if let Some(extension) = file_path.extension() {
                 if let Some(ext_str) = extension.to_str() {
                     if supported_extensions.contains(&ext_str.to_lowercase().as_str()) {
-                        match parse_file(
-                            file_path.to_str().unwrap_or_default(),
-                            Some(Path::new("images")),
-                        ) {
+                        match parse_file(file_path.to_str().unwrap_or_default(), Some(&images_dir))
+                        {
                             Ok(metadata) => tracks.push(metadata),
                             Err(e) => println!("Error parsing file {file_path:?}: {e}"), // Log error but continue
                         }
