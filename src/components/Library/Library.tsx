@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAudioStore } from '../../store/audioStore';
 import { mockAlbums } from '../../mockData';
 import { Play } from 'lucide-react';
 import { LibrarySection } from './LibrarySection';
+import { useTracks } from '../../hooks/useTracks';
 
 const Library: React.FC = () => {
   const { currentTrack } = useAudioStore();
+  const { tracks, getTracks } = useTracks();
+
+  useEffect(() => {
+    getTracks();
+  }, [getTracks]);
+
+  const madeForYouItems = tracks.map((track) => ({
+    id: String(track.id),
+    title: track.title || track.path.split('/').pop() || 'Unknown Title',
+    artist: track.artist || 'Unknown Artist',
+    coverUrl: 'https://placehold.co/200/555555/white?text=Track',
+  }));
 
   return (
     <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar">
@@ -60,7 +73,7 @@ const Library: React.FC = () => {
           {/* Made For You */}
           <LibrarySection
             title="Made For You"
-            items={[...mockAlbums].reverse()}
+            items={madeForYouItems.length > 0 ? madeForYouItems : [...mockAlbums].reverse()}
             actionLabel="SEE MORE"
             backgroundDecoration={
               <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none"></div>

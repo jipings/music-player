@@ -30,3 +30,14 @@ export interface LocalFolder {
   path: string;
   songCount: number;
 }
+
+export interface Track {
+  id: number;
+  path: string;
+  title?: string;
+  artist?: string;
+  album?: string;
+  duration_secs: number;
+  cover_mime?: string;
+  has_cover: boolean;
+}

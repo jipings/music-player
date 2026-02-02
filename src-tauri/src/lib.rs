@@ -3,7 +3,8 @@ pub mod database;
 pub mod scanner;
 
 use audio::commands::{
-    add_folder, delete_folders, get_folders, pause, play, resume, seek, set_volume, stop,
+    add_folder, delete_folders, get_folders, get_tracks, pause, play, resume, seek, set_volume,
+    stop,
 };
 use audio::player::init_audio_thread;
 use database::AppState;
@@ -57,7 +58,8 @@ pub fn run() {
             set_volume,
             add_folder,
             get_folders,
-            delete_folders
+            delete_folders,
+            get_tracks
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

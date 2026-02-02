@@ -126,6 +126,19 @@ pub fn get_folders(
 /// Returns an error if the database connection lock fails or the operation fails.
 #[command]
 #[allow(clippy::needless_pass_by_value)]
+pub fn get_tracks(
+    title_filter: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::scanner::parser::TrackMetadata>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::get_tracks(&conn, title_filter).map_err(|e| e.to_string())
+}
+
+/// # Errors
+///
+/// Returns an error if the database connection lock fails or the operation fails.
+#[command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn delete_folders(ids: Vec<String>, state: State<'_, AppState>) -> Result<(), String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     operations::delete_folders(&conn, &ids).map_err(|e| e.to_string())
