@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAudioStore } from '../../store/audioStore';
 import { mockAlbums, Album } from '../../mockData';
-import { Play } from 'lucide-react';
 import { LibrarySection } from './LibrarySection';
 import { useTracks } from '../../hooks/useTracks';
 import { useAudioController } from '../../hooks/useAudioController';
@@ -36,7 +35,7 @@ const Library: React.FC = () => {
     <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar">
       <div className="max-w-[1400px] mx-auto">
         {/* Hero Section - Advanced Glassmorphism */}
-        <div className="relative h-80 bg-white/10 backdrop-blur-2xl border border-white/20 p-10 flex items-end shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] m-6 rounded-[2.5rem] overflow-hidden group">
+        {/* <div className="relative h-80 bg-white/10 backdrop-blur-2xl border border-white/20 p-10 flex items-end shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] m-6 rounded-[2.5rem] overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/40 via-purple-600/20 to-transparent"></div>
 
           <div className="relative z-10 w-full">
@@ -63,10 +62,9 @@ const Library: React.FC = () => {
             </div>
           </div>
 
-          {/* Decorative glass elements */}
           <div className="absolute -right-20 -top-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[80px] group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
           <div className="absolute -left-20 -bottom-20 w-60 h-60 bg-purple-500/20 rounded-full blur-[60px]"></div>
-        </div>
+        </div> */}
 
         <div className="px-6 pb-12 space-y-12">
           {/* Recently Played */}

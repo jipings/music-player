@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Compass, Disc3, Mic2, Clock, Heart, Folder, ListMusic, Music } from 'lucide-react';
+import { Home, Clock, Heart, Folder, ListMusic, Music } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 
 const Sidebar: React.FC = () => {
@@ -33,7 +33,7 @@ const Sidebar: React.FC = () => {
               <Home className="w-5 h-5" />
               Home
             </button>
-            <button
+            {/* <button
               onClick={() => setView('library')}
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600"
             >
@@ -53,7 +53,7 @@ const Sidebar: React.FC = () => {
             >
               <Mic2 className="w-5 h-5" />
               Artists
-            </button>
+            </button> */}
           </nav>
         </div>
 
