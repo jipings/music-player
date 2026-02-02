@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, ChevronRight } from 'lucide-react';
-import { Album } from '../../mockData';
+import { Album } from '../../types/audio';
 
 interface LibrarySectionProps {
   title: string;
@@ -48,6 +48,7 @@ export const LibrarySection: React.FC<LibrarySectionProps> = ({
           >
             <div className="relative aspect-square mb-5 shadow-2xl rounded-[2rem] overflow-hidden">
               <img
+                hidden={!album.coverUrl}
                 src={album.coverUrl}
                 alt={album.title}
                 className="w-full h-full object-cover scale-110 group-hover:scale-125 transition-transform duration-700"

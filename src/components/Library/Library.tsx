@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAudioStore } from '../../store/audioStore';
 import { useUiStore } from '../../store/uiStore';
-import { mockAlbums, Album } from '../../mockData';
 import { LibrarySection } from './LibrarySection';
 import { useTracks } from '../../hooks/useTracks';
 import { usePlaylists } from '../../hooks/usePlaylists';
 import { useAudioController } from '../../hooks/useAudioController';
-import { Track } from '../../types/audio';
+import { Track, Album } from '../../types/audio';
 import { convertFileSrc } from '@tauri-apps/api/core';
 
 const Library: React.FC = () => {
@@ -105,7 +104,7 @@ const Library: React.FC = () => {
             {/* Recently Played */}
             <LibrarySection
               title="Recently Played"
-              items={recentItems.length > 0 ? recentItems : mockAlbums}
+              items={recentItems}
               actionLabel="EXPLORE ALL"
               titleSuffix={
                 <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
@@ -119,7 +118,7 @@ const Library: React.FC = () => {
             {/* Made For You */}
             <LibrarySection
               title="Made For You"
-              items={madeForYouItems.length > 0 ? madeForYouItems : [...mockAlbums].reverse()}
+              items={madeForYouItems}
               actionLabel="SEE MORE"
               backgroundDecoration={
                 <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none"></div>

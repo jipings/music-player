@@ -48,3 +48,10 @@ export interface Playlist {
   name: string;
   createdAt: string;
 }
+
+export interface Album {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl: string;
+}
