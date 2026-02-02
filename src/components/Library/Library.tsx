@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAudioStore } from '../../store/audioStore';
 import { useUiStore } from '../../store/uiStore';
 import { mockAlbums, Album } from '../../mockData';
@@ -6,6 +6,7 @@ import { LibrarySection } from './LibrarySection';
 import { useTracks } from '../../hooks/useTracks';
 import { usePlaylists } from '../../hooks/usePlaylists';
 import { useAudioController } from '../../hooks/useAudioController';
+import { Track } from '../../types/audio';
 
 const Library: React.FC = () => {
   const { currentTrack, setCurrentTrack } = useAudioStore();
@@ -14,40 +15,63 @@ const Library: React.FC = () => {
   const { playlists, getPlaylists, currentPlaylistTracks, getPlaylistTracks } = usePlaylists();
   const audioController = useAudioController();
 
+  const [recentTracks, setRecentTracks] = useState<Track[]>([]);
+  const [defaultTracks, setDefaultTracks] = useState<Track[]>([]);
+
   useEffect(() => {
     getTracks();
     getPlaylists();
   }, [getTracks, getPlaylists]);
 
   useEffect(() => {
+    const fetchDashboardTracks = async () => {
+      if (currentView === 'library') {
+        const recent = playlists.find((p) => p.name === 'Recent');
+        const defaultPl = playlists.find((p) => p.name === 'Default');
+
+        if (recent) {
+          // We can use the existing getPlaylistTracks or a direct invoke if we don't want to mess with global state
+          // For the dashboard, local state is better to avoid overwriting currentPlaylistTracks
+          import('@tauri-apps/api/core').then(({ invoke }) => {
+            invoke<Track[]>('get_tracks_by_playlist', { playlistId: recent.id }).then(
+              setRecentTracks,
+            );
+          });
+        }
+        if (defaultPl) {
+          import('@tauri-apps/api/core').then(({ invoke }) => {
+            invoke<Track[]>('get_tracks_by_playlist', { playlistId: defaultPl.id }).then(
+              setDefaultTracks,
+            );
+          });
+        }
+      }
+    };
+
     if (currentView === 'playlist' && selectedPlaylistId) {
       getPlaylistTracks(selectedPlaylistId);
-    } else if (currentView === 'library') {
-      const recent = playlists.find((p) => p.name === 'Recent');
-      if (recent) {
-        getPlaylistTracks(recent.id);
-      }
+    } else if (currentView === 'library' && playlists.length > 0) {
+      fetchDashboardTracks();
     }
   }, [currentView, selectedPlaylistId, playlists, getPlaylistTracks]);
 
-  const madeForYouItems = tracks.map((track) => ({
+  const mapTrackToAlbum = (track: Track): Album => ({
     id: String(track.id),
     title: track.title || track.path.split('/').pop() || 'Unknown Title',
     artist: track.artist || 'Unknown Artist',
     coverUrl: 'https://placehold.co/200/555555/white?text=Track',
-  }));
+  });
 
-  const playlistItems = currentPlaylistTracks.map((track) => ({
-    id: String(track.id),
-    title: track.title || track.path.split('/').pop() || 'Unknown Title',
-    artist: track.artist || 'Unknown Artist',
-    coverUrl: 'https://placehold.co/200/555555/white?text=Track',
-  }));
+  const madeForYouItems = defaultTracks.map(mapTrackToAlbum);
+  const recentItems = recentTracks.map(mapTrackToAlbum);
+  const playlistItems = currentPlaylistTracks.map(mapTrackToAlbum);
 
   const handleItemClick = (item: Album) => {
-    // Search in current context first, then fallback
+    // Search in all relevant track lists
     const track =
       currentPlaylistTracks.find((t) => String(t.id) === item.id) ||
+      recentTracks.find((t) => String(t.id) === item.id) ||
+      defaultTracks.find((t) => String(t.id) === item.id) ||
       tracks.find((t) => String(t.id) === item.id);
 
     if (track) {
@@ -57,6 +81,7 @@ const Library: React.FC = () => {
       console.log('Clicked mock or unknown album:', item.title);
     }
   };
+
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
 
   return (
@@ -67,7 +92,7 @@ const Library: React.FC = () => {
             <LibrarySection
               title={selectedPlaylist.name}
               items={playlistItems}
-              actionLabel="PLAY ALL" // Could be dynamic
+              actionLabel="PLAY ALL"
               backgroundDecoration={
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none"></div>
               }
@@ -79,7 +104,7 @@ const Library: React.FC = () => {
             {/* Recently Played */}
             <LibrarySection
               title="Recently Played"
-              items={playlistItems}
+              items={recentItems.length > 0 ? recentItems : mockAlbums}
               actionLabel="EXPLORE ALL"
               titleSuffix={
                 <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
@@ -91,7 +116,6 @@ const Library: React.FC = () => {
             />
 
             {/* Made For You */}
-
             <LibrarySection
               title="Made For You"
               items={madeForYouItems.length > 0 ? madeForYouItems : [...mockAlbums].reverse()}
