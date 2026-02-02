@@ -1,17 +1,32 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Home, Clock, Heart, Folder, ListMusic, Music } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
+import { usePlaylists } from '../../hooks/usePlaylists';
 
 const Sidebar: React.FC = () => {
-  const { currentView, setView } = useUiStore();
+  const { currentView, setView, selectedPlaylistId, setSelectedPlaylistId } = useUiStore();
+  const { playlists, getPlaylists } = usePlaylists();
 
-  const getLinkClass = (viewName: string) => {
-    const isActive = currentView === viewName;
+  useEffect(() => {
+    getPlaylists();
+  }, [getPlaylists]);
+
+  const recentPlaylist = playlists.find((p) => p.name === 'Recent');
+  const favoritesPlaylist = playlists.find((p) => p.name === 'Favorites');
+  const userPlaylists = playlists.filter((p) => p.name !== 'Recent' && p.name !== 'Favorites');
+
+  const handlePlaylistClick = (id: string) => {
+    setSelectedPlaylistId(id);
+    setView('playlist');
+  };
+
+  const getLinkClass = (viewName: string, id?: string) => {
+    const isActive = currentView === viewName && (!id || selectedPlaylistId === id);
     return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
       isActive
         ? 'text-gray-900 bg-white/60 font-medium shadow-sm'
         : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'
-    }`;
+    } cursor-pointer w-full text-left`;
   };
 
   return (
@@ -62,14 +77,24 @@ const Sidebar: React.FC = () => {
             Library
           </h3>
           <nav className="space-y-1">
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600">
-              <Clock className="w-5 h-5" />
-              Recent
-            </button>
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all w-full text-left text-gray-600">
-              <Heart className="w-5 h-5" />
-              Favorites
-            </button>
+            {recentPlaylist && (
+              <button
+                onClick={() => handlePlaylistClick(recentPlaylist.id)}
+                className={getLinkClass('playlist', recentPlaylist.id)}
+              >
+                <Clock className="w-5 h-5" />
+                Recent
+              </button>
+            )}
+            {favoritesPlaylist && (
+              <button
+                onClick={() => handlePlaylistClick(favoritesPlaylist.id)}
+                className={getLinkClass('playlist', favoritesPlaylist.id)}
+              >
+                <Heart className="w-5 h-5" />
+                Favorites
+              </button>
+            )}
             <button onClick={() => setView('local')} className={getLinkClass('local')}>
               <Folder className="w-5 h-5" />
               Local
@@ -82,15 +107,15 @@ const Sidebar: React.FC = () => {
             Playlists
           </h3>
           <nav className="space-y-1">
-            {['Chill Vibes', 'Workout Pump', 'Focus Flow'].map((item) => (
-              <a
-                key={item}
-                href="#"
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-gray-900 hover:bg-white/40 transition-all text-gray-600"
+            {userPlaylists.map((playlist) => (
+              <button
+                key={playlist.id}
+                onClick={() => handlePlaylistClick(playlist.id)}
+                className={getLinkClass('playlist', playlist.id)}
               >
                 <ListMusic className="w-5 h-5 opacity-50" />
-                {item}
-              </a>
+                {playlist.name}
+              </button>
             ))}
           </nav>
         </div>
