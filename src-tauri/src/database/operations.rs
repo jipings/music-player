@@ -174,27 +174,53 @@ fn map_folder_row(row: &rusqlite::Row<'_>) -> Result<LocalFolder> {
     })
 }
 
-/// Deletes local folders from the database by their IDs.
+/// Deletes local folders from the database by their IDs and removes all associated data (tracks and playlist links).
 ///
 /// # Errors
 ///
-/// Returns an error if the deletion fails.
-pub fn delete_folders(conn: &Connection, ids: &[String]) -> Result<()> {
+/// Returns an error if the transaction or any deletion step fails.
+pub fn delete_folders(conn: &mut Connection, ids: &[String]) -> Result<()> {
     if ids.is_empty() {
         return Ok(());
     }
 
-    let query = format!(
-        "DELETE FROM local_folders WHERE id IN ({})",
-        ids.iter().map(|_| "?").collect::<Vec<_>>().join(",")
-    );
+    let tx = conn.transaction()?;
+    {
+        // 1. Get the paths of the folders to be deleted so we can find related tracks
+        let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let paths: Vec<String> = {
+            let mut stmt = tx.prepare(&format!(
+                "SELECT path FROM local_folders WHERE id IN ({placeholders})"
+            ))?;
+            let rows = stmt.query_map(rusqlite::params_from_iter(ids), |row| row.get(0))?;
+            let mut p = Vec::new();
+            for r in rows {
+                p.push(r?);
+            }
+            p
+        };
 
-    let mut stmt = conn.prepare(&query)?;
+        for path in paths {
+            let pattern = format!("{path}%");
 
-    let params: Vec<&dyn rusqlite::ToSql> =
-        ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+            // 2. Identify and delete playlist associations for tracks in this folder
+            // This satisfies the manual cleanup request.
+            tx.execute(
+                "DELETE FROM playlist_tracks WHERE track_id IN (SELECT id FROM tracks WHERE path LIKE ?1)",
+                params![pattern],
+            )?;
 
-    stmt.execute(params.as_slice())?;
+            // 3. Delete the tracks themselves
+            tx.execute("DELETE FROM tracks WHERE path LIKE ?1", params![pattern])?;
+        }
+
+        // 4. Delete the folder records
+        let mut stmt = tx.prepare(&format!(
+            "DELETE FROM local_folders WHERE id IN ({placeholders})"
+        ))?;
+        stmt.execute(rusqlite::params_from_iter(ids))?;
+    }
+    tx.commit()?;
 
     Ok(())
 }
@@ -443,14 +469,45 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_folders() {
-        let conn = setup_db();
-        let id = add_folder(&conn, "To Delete", "/delete", 0).unwrap();
+    fn test_delete_folders_comprehensive() {
+        let mut conn = setup_db();
+        let folder_path = "/music/folder";
+        let folder_id = add_folder(&conn, "Folder", folder_path, 1).unwrap();
+        let playlist_id = create_playlist(&conn, "Test PL").unwrap();
 
-        delete_folders(&conn, &[id]).unwrap();
+        let track = TrackMetadata {
+            id: 0,
+            path: format!("{}/song.mp3", folder_path),
+            title: None,
+            artist: None,
+            album: None,
+            duration_secs: 0,
+            cover_mime: None,
+            has_cover: false,
+            cover_img_path: None,
+        };
+        add_tracks(&mut conn, &[track]).unwrap();
+        let tracks = get_tracks(&conn, None).unwrap();
+        let track_id = tracks[0].id;
 
-        let folders = get_folders(&conn, None).unwrap();
-        assert!(folders.is_empty());
+        add_tracks_to_playlist(&mut conn, &playlist_id, &[track_id]).unwrap();
+
+        // Verify initial state
+        assert_eq!(get_tracks(&conn, None).unwrap().len(), 1);
+        assert_eq!(
+            get_tracks_by_playlist(&conn, &playlist_id).unwrap().len(),
+            1
+        );
+
+        // Delete folder
+        delete_folders(&mut conn, &[folder_id]).unwrap();
+
+        // Verify comprehensive cleanup
+        assert!(get_folders(&conn, None).unwrap().is_empty());
+        assert!(get_tracks(&conn, None).unwrap().is_empty());
+        assert!(get_tracks_by_playlist(&conn, &playlist_id)
+            .unwrap()
+            .is_empty());
     }
 
     #[test]

@@ -148,8 +148,8 @@ pub fn get_tracks(
 #[command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn delete_folders(ids: Vec<String>, state: State<'_, AppState>) -> Result<(), String> {
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    operations::delete_folders(&conn, &ids).map_err(|e| e.to_string())
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    operations::delete_folders(&mut conn, &ids).map_err(|e| e.to_string())
 }
 
 /// # Errors
