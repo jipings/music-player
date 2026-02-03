@@ -12,7 +12,8 @@ const Library: React.FC = () => {
   const { currentTrack, setCurrentTrack } = useAudioStore();
   const { currentView, selectedPlaylistId } = useUiStore();
   const { tracks, getTracks } = useTracks();
-  const { playlists, getPlaylists, currentPlaylistTracks, getPlaylistTracks } = usePlaylists();
+  const { playlists, currentPlaylistTracks, getPlaylistTracks, addTracksToPlaylist } =
+    usePlaylists();
   const audioController = useAudioController();
 
   const [recentTracks, setRecentTracks] = useState<Track[]>([]);
@@ -20,8 +21,7 @@ const Library: React.FC = () => {
 
   useEffect(() => {
     getTracks();
-    getPlaylists();
-  }, [getTracks, getPlaylists]);
+  }, [getTracks]);
 
   useEffect(() => {
     const fetchDashboardTracks = async () => {
@@ -77,6 +77,12 @@ const Library: React.FC = () => {
     if (track) {
       audioController.play(track.path);
       setCurrentTrack(track);
+
+      // Add to Recent playlist
+      const recentPlaylist = playlists.find((p) => p.name === 'Recent');
+      if (recentPlaylist) {
+        addTracksToPlaylist(recentPlaylist.id, [track.id]);
+      }
     } else {
       console.log('Clicked mock or unknown album:', item.title);
     }

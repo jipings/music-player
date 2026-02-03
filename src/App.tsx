@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import Library from './components/Library/Library';
 import Local from './components/Local/Local';
@@ -5,11 +6,17 @@ import PlayerBar from './components/PlayerBar/PlayerBar';
 import bgImage from './assets/default.jpeg';
 import { useUiStore } from './store/uiStore';
 import { usePlayerSync } from './hooks/usePlayerSync';
+import { usePlaylists } from './hooks/usePlaylists';
 import './App.css';
 
 function App() {
   const { currentView } = useUiStore();
+  const { getPlaylists } = usePlaylists();
   usePlayerSync();
+
+  useEffect(() => {
+    getPlaylists();
+  }, [getPlaylists]);
 
   return (
     <div

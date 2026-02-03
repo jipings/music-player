@@ -1,15 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Home, Clock, Heart, Folder, ListMusic, Music } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { usePlaylists } from '../../hooks/usePlaylists';
 
 const Sidebar: React.FC = () => {
   const { currentView, setView, selectedPlaylistId, setSelectedPlaylistId } = useUiStore();
-  const { playlists, getPlaylists } = usePlaylists();
-
-  useEffect(() => {
-    getPlaylists();
-  }, [getPlaylists]);
+  const { playlists } = usePlaylists();
 
   const recentPlaylist = playlists.find((p) => p.name === 'Recent');
   const favoritesPlaylist = playlists.find((p) => p.name === 'Favorites');

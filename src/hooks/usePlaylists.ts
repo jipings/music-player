@@ -1,12 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Playlist, Track } from '../types/audio';
+import { usePlaylistStore } from '../store/playlistStore';
 
 export const usePlaylists = () => {
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [currentPlaylistTracks, setCurrentPlaylistTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    playlists,
+    currentPlaylistTracks,
+    loading,
+    error,
+    setPlaylists,
+    setCurrentPlaylistTracks,
+    setLoading,
+    setError,
+  } = usePlaylistStore();
 
   const getPlaylists = useCallback(async () => {
     setLoading(true);
@@ -19,7 +26,7 @@ export const usePlaylists = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setPlaylists, setError, setLoading]);
 
   const createPlaylist = useCallback(
     async (name: string) => {
@@ -35,7 +42,7 @@ export const usePlaylists = () => {
         setLoading(false);
       }
     },
-    [getPlaylists],
+    [getPlaylists, setError, setLoading],
   );
 
   const deletePlaylist = useCallback(
@@ -52,35 +59,41 @@ export const usePlaylists = () => {
         setLoading(false);
       }
     },
-    [getPlaylists],
+    [getPlaylists, setError, setLoading],
   );
 
-  const getPlaylistTracks = useCallback(async (playlistId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await invoke<Track[]>('get_tracks_by_playlist', { playlistId });
-      setCurrentPlaylistTracks(result);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const getPlaylistTracks = useCallback(
+    async (playlistId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await invoke<Track[]>('get_tracks_by_playlist', { playlistId });
+        setCurrentPlaylistTracks(result);
+      } catch (err) {
+        setError(String(err));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setCurrentPlaylistTracks, setError, setLoading],
+  );
 
-  const addTracksToPlaylist = useCallback(async (playlistId: string, trackIds: number[]) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await invoke('add_tracks_to_playlist', { playlistId, trackIds });
-      // Optionally refresh current playlist tracks if looking at that playlist
-    } catch (err) {
-      setError(String(err));
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const addTracksToPlaylist = useCallback(
+    async (playlistId: string, trackIds: number[]) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await invoke('add_tracks_to_playlist', { playlistId, trackIds });
+        // Optionally refresh current playlist tracks if looking at that playlist
+      } catch (err) {
+        setError(String(err));
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setError, setLoading],
+  );
 
   const deleteTracksFromPlaylist = useCallback(
     async (playlistId: string, trackIds: number[]) => {
@@ -96,7 +109,7 @@ export const usePlaylists = () => {
         setLoading(false);
       }
     },
-    [getPlaylistTracks],
+    [getPlaylistTracks, setError, setLoading],
   );
 
   return {

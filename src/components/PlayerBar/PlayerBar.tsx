@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAudioStore } from '../../store/audioStore';
 import { useAudioController } from '../../hooks/useAudioController';
+import { usePlaylists } from '../../hooks/usePlaylists';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import {
   Heart,
@@ -23,6 +24,7 @@ const formatTime = (seconds: number) => {
 const PlayerBar: React.FC = () => {
   const { isPlaying, currentTrack, volume, duration, currentTime } = useAudioStore();
   const audioController = useAudioController();
+  const { playlists, addTracksToPlaylist } = usePlaylists();
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -42,6 +44,16 @@ const PlayerBar: React.FC = () => {
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const vol = parseFloat(e.target.value);
     audioController.setVolume(vol);
+  };
+
+  const handleAddToFavorites = async () => {
+    if (!currentTrack) return;
+    const favorites = playlists.find((p) => p.name === 'Favorites');
+    if (favorites) {
+      await addTracksToPlaylist(favorites.id, [currentTrack.id]);
+    } else {
+      console.warn('Favorites playlist not found');
+    }
   };
 
   if (!currentTrack) return null;
@@ -66,7 +78,7 @@ const PlayerBar: React.FC = () => {
             {currentTrack.artist || 'Unknown Artist'}
           </div>
         </div>
-        <button className="ml-2 text-gray-500 hover:text-red-500">
+        <button className="ml-2 text-gray-500 hover:text-red-500" onClick={handleAddToFavorites}>
           <Heart className="w-5 h-5" />
         </button>
       </div>
