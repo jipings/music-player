@@ -9,7 +9,7 @@ import { Track, Album } from '../../types/audio';
 import { convertFileSrc } from '@tauri-apps/api/core';
 
 const Library: React.FC = () => {
-  const { currentTrack, setCurrentTrack } = useAudioStore();
+  const { setCurrentTrack } = useAudioStore();
   const { currentView, selectedPlaylistId } = useUiStore();
   const { tracks, getTracks } = useTracks();
   const { playlists, currentPlaylistTracks, getPlaylistTracks, addTracksToPlaylist } =
@@ -91,10 +91,10 @@ const Library: React.FC = () => {
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
 
   return (
-    <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar">
-      <div className="max-w-[1400px] mx-auto">
+    <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar pb-[144px] lg:pb-24">
+      <div className="w-full px-4 md:px-6 lg:px-6">
         {currentView === 'playlist' && selectedPlaylist ? (
-          <div className="px-6 pb-12 space-y-12 mt-12">
+          <div className="py-6 md:pb-12 space-y-6 md:space-y-12 md:mt-12">
             <LibrarySection
               title={selectedPlaylist.name}
               items={playlistItems}
@@ -106,12 +106,11 @@ const Library: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="px-6 pb-12 space-y-12 mt-12">
-            {/* Recently Played */}
+          <div className="py-6 md:pb-12 space-y-6 md:space-y-12 md:mt-12">
             <LibrarySection
               title="Recently Played"
               items={recentItems}
-              actionLabel="EXPLORE ALL"
+              actionLabel={window.innerWidth < 768 ? 'EXPLORE' : 'EXPLORE ALL'}
               titleSuffix={
                 <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
               }
@@ -121,11 +120,10 @@ const Library: React.FC = () => {
               onItemClick={handleItemClick}
             />
 
-            {/* Made For You */}
             <LibrarySection
               title="Made For You"
               items={madeForYouItems}
-              actionLabel="SEE MORE"
+              actionLabel={window.innerWidth < 768 ? 'MORE' : 'SEE MORE'}
               backgroundDecoration={
                 <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none"></div>
               }
@@ -134,14 +132,6 @@ const Library: React.FC = () => {
           </div>
         )}
       </div>
-
-      {currentTrack && (
-        <div className="fixed bottom-28 right-10 p-5 bg-indigo-600/80 backdrop-blur-2xl border border-white/30 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] z-50 text-white font-black tracking-tight flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-500">
-          <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
-          <span className="opacity-60 text-[10px] uppercase tracking-widest">Now Playing</span>
-          {currentTrack.title || currentTrack.path.split('/').pop()}
-        </div>
-      )}
     </div>
   );
 };

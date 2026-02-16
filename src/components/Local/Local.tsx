@@ -44,46 +44,42 @@ const Local: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar p-8">
-      <div className="max-w-[1400px] mx-auto">
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-10">
+    <div className="flex-1 bg-transparent text-gray-900 overflow-y-auto custom-scrollbar pb-[144px] lg:pb-24 p-4 md:p-6 lg:p-8">
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-6 md:mb-10">
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tight mb-2 drop-shadow-sm">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 tracking-tight mb-2 drop-shadow-sm">
               Local Files
             </h1>
-            <p className="text-white/80 font-medium tracking-wide">
+            <p className="text-gray-600 font-medium tracking-wide text-sm md:text-base">
               Manage your local music directories
             </p>
           </div>
         </div>
 
-        {/* Folders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {folders.map((folder) => (
             <FolderCard key={folder.id} folder={folder} onDelete={handleDeleteFolder} />
           ))}
 
-          {/* Add Folder Card (Empty State / Shortcut) */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="group flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-gray-300 hover:border-indigo-400 bg-white/10 hover:bg-white/30 backdrop-blur-sm transition-all duration-300 min-h-[180px]"
+            className="group flex flex-col items-center justify-center p-6 md:p-8 rounded-2xl border-2 border-dashed border-gray-300 hover:border-indigo-400 bg-white/10 hover:bg-white/30 backdrop-blur-sm transition-all duration-300 min-h-[160px] md:min-h-[180px]"
           >
             <div className="p-4 bg-gray-100 rounded-full group-hover:bg-indigo-50 text-gray-400 group-hover:text-indigo-500 transition-colors mb-4">
-              <FolderPlus className="w-8 h-8" />
+              <FolderPlus className="w-6 h-6 md:w-8 md:h-8" />
             </div>
-            <span className="font-bold text-gray-500 group-hover:text-indigo-600 transition-colors">
+            <span className="font-bold text-gray-500 group-hover:text-indigo-600 transition-colors text-sm md:text-base">
               Add New Folder
             </span>
           </button>
         </div>
       </div>
 
-      {/* Add Folder Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md p-8 border border-white/50 scale-100 animate-in zoom-in-95 duration-200">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">Add Local Folder</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-md p-6 md:p-8 border border-white/50 animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-900">Add Local Folder</h2>
             <form onSubmit={handleAddFolder} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Folder Name</label>
